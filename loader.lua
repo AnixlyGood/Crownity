@@ -76,6 +76,5 @@ AnixlyUI:ShowKeySystem({
             Text = "ANIXLY HUB",
             Height = 150
         })
-        })
     end
 })

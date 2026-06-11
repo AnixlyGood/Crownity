@@ -1423,8 +1423,6 @@ function AnixlyUI:CreateWindow(config)
         end
     })
 
-    themeSection:AddLabel("Anixly UI v3 Premium Edition")
-
     return window
 end
 
