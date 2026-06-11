@@ -2,7 +2,7 @@ repeat task.wait() until game:IsLoaded()
 
 local AnixlyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/AnixlyGood/Uilibary/refs/heads/main/AnixlyUi.lua"))()
 
-local IMAGE_ID = "rbxassetid://101517365964699"
+local IMAGE_ID = "rbxassetid://2061475061"
 
 AnixlyUI:ShowKeySystem({
     Title = "ANIXLY KEY",
@@ -33,19 +33,6 @@ AnixlyUI:ShowKeySystem({
         local MiscTab = Window:CreateTab("Misc", "rbxassetid://6023426926")
 
         local MainSection = MainTab:AddSection("Main Menu")
-
-        MainSection:AddButton({
-            Text = "Test Notification",
-            Callback = function()
-                AnixlyUI:ShowNotification({
-                    Title = "Anixly Notification",
-                    Message = "Ini notif pakai gambar custom",
-                    Theme = "success",
-                    Icon = IMAGE_ID,
-                    Duration = 3
-                })
-            end
-        })
 
         MainSection:AddToggle({
             Text = "Auto Farm",
@@ -82,31 +69,6 @@ AnixlyUI:ShowKeySystem({
             end
         })
 
-        PlayerSection:AddKeybind({
-            Text = "Open Key",
-            Default = "RightShift",
-            Callback = function(key)
-                print("Keybind diganti:", key)
-            end,
-            Pressed = function()
-                print("Keybind ditekan")
-            end
-        })
-
-        local Progress = PlayerSection:AddProgressBar({
-            Text = "Loading Bar"
-        })
-
-        PlayerSection:AddButton({
-            Text = "Test Progress",
-            Callback = function()
-                for i = 0, 100, 10 do
-                    Progress:SetProgress(i)
-                    task.wait(0.1)
-                end
-            end
-        })
-
         local MiscSection = MiscTab:AddSection("Info")
 
         MiscSection:AddImage({
@@ -114,22 +76,6 @@ AnixlyUI:ShowKeySystem({
             Text = "ANIXLY HUB",
             Height = 150
         })
-
-        MiscSection:AddLabel("Anixly UI berhasil muncul.")
-        MiscSection:AddLabel("Key berhasil diverifikasi.")
-        MiscSection:AddLabel("Mini icon pakai gambar custom.")
-
-        MiscSection:AddButton({
-            Text = "Notif Gambar",
-            Callback = function()
-                AnixlyUI:ShowNotification({
-                    Title = "INFO",
-                    Message = "Notif ini pakai gambar custom juga.",
-                    Theme = "info",
-                    Icon = IMAGE_ID,
-                    Duration = 3
-                })
-            end
         })
     end
 })
