@@ -87,7 +87,7 @@ local UtilityTab = Window:CreateTab("Utility")
 
 --// DASHBOARD
 
-local DashboardSection = DashboardTab:AddSection("Information")
+local DashboardSection = DashboardTab:AddSection("🍭  Information")
 
 DashboardSection:AddLabel("═══════════════════════════════")
 DashboardSection:AddLabel("       WELCOME TO ANIXLY HUB")
@@ -102,12 +102,14 @@ DashboardSection:AddLabel("🌍 Server ID: " .. string.sub(game.JobId, 1, 8) .. 
 DashboardSection:AddLabel("👥 Players Online: " .. #Players:GetPlayers())
 DashboardSection:AddLabel("⚡ Executor: " .. executorName)
 
-DashboardSection:AddButton({
-    Text = "🔄 Rejoin Server",
-    Callback = function()
-        Notify("REJOIN SERVER", "Rejoining server...", "warning", 2)
-        task.wait(1)
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+local ThemeSection = DashboardTab:AddSection("⚙️ Settings")
+
+ThemeSection:AddDropdown({
+    Text = "🎨 Theme",
+    Options = AnixlyUI:GetThemes(),
+    Default = "ANIXLY",
+    Callback = function(themeName)
+        Window:SetTheme(themeName)
     end
 })
 
@@ -271,326 +273,6 @@ MainSection:AddSlider({
     end
 })
 
---// FLY MODE (Support HP/Mobile)
-local flyEnabled = false
-local flying = false
-local flyConnection = nil
-local flyKeyConnection = nil
-local flySpeed = 0
-local maxFlySpeed = 50
-local flyCtrl = {f = 0, b = 0, l = 0, r = 0, up = 0, down = 0}
-local lastFlyCtrl = {f = 0, b = 0, l = 0, r = 0}
-local bg = nil
-local bv = nil
-local flyButtons = {}
-local flyGui = nil
-
--- Deteksi apakah device HP
-local isMobile = game:GetService("UserInputService").TouchEnabled
-
-local function CreateFlyButtons()
-    if not isMobile then return end
-    
-    flyGui = Instance.new("ScreenGui")
-    flyGui.Name = "FlyControls"
-    flyGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    flyGui.ResetOnSpawn = false
-    
-    local buttonSize = UDim2.new(0, 60, 0, 60)
-    local buttonColor = Color3.fromRGB(77, 100, 150)
-    
-    -- Tombol W (Maju)
-    local btnW = Instance.new("TextButton")
-    btnW.Size = buttonSize
-    btnW.Position = UDim2.new(0.5, -30, 0.85, -70)
-    btnW.BackgroundColor3 = buttonColor
-    btnW.Text = "⬆️"
-    btnW.TextSize = 30
-    btnW.Font = Enum.Font.GothamBold
-    btnW.Parent = flyGui
-    
-    -- Tombol S (Mundur)
-    local btnS = Instance.new("TextButton")
-    btnS.Size = buttonSize
-    btnS.Position = UDim2.new(0.5, -30, 0.85, 0)
-    btnS.BackgroundColor3 = buttonColor
-    btnS.Text = "⬇️"
-    btnS.TextSize = 30
-    btnS.Font = Enum.Font.GothamBold
-    btnS.Parent = flyGui
-    
-    -- Tombol A (Kiri)
-    local btnA = Instance.new("TextButton")
-    btnA.Size = buttonSize
-    btnA.Position = UDim2.new(0.5, -90, 0.85, -35)
-    btnA.BackgroundColor3 = buttonColor
-    btnA.Text = "⬅️"
-    btnA.TextSize = 30
-    btnA.Font = Enum.Font.GothamBold
-    btnA.Parent = flyGui
-    
-    -- Tombol D (Kanan)
-    local btnD = Instance.new("TextButton")
-    btnD.Size = buttonSize
-    btnD.Position = UDim2.new(0.5, 30, 0.85, -35)
-    btnD.BackgroundColor3 = buttonColor
-    btnD.Text = "➡️"
-    btnD.TextSize = 30
-    btnD.Font = Enum.Font.GothamBold
-    btnD.Parent = flyGui
-    
-    -- Tombol Naik (Up)
-    local btnUp = Instance.new("TextButton")
-    btnUp.Size = UDim2.new(0, 50, 0, 50)
-    btnUp.Position = UDim2.new(0.85, 0, 0.75, 0)
-    btnUp.BackgroundColor3 = buttonColor
-    btnUp.Text = "🔼"
-    btnUp.TextSize = 25
-    btnUp.Font = Enum.Font.GothamBold
-    btnUp.Parent = flyGui
-    
-    -- Tombol Turun (Down)
-    local btnDown = Instance.new("TextButton")
-    btnDown.Size = UDim2.new(0, 50, 0, 50)
-    btnDown.Position = UDim2.new(0.85, 0, 0.85, 0)
-    btnDown.BackgroundColor3 = buttonColor
-    btnDown.Text = "🔽"
-    btnDown.TextSize = 25
-    btnDown.Font = Enum.Font.GothamBold
-    btnDown.Parent = flyGui
-    
-    -- Tombol E (Toggle Fly)
-    local btnToggle = Instance.new("TextButton")
-    btnToggle.Size = UDim2.new(0, 80, 0, 50)
-    btnToggle.Position = UDim2.new(0.02, 0, 0.75, 0)
-    btnToggle.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-    btnToggle.Text = "FLY OFF"
-    btnToggle.TextSize = 18
-    btnToggle.Font = Enum.Font.GothamBold
-    btnToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btnToggle.Parent = flyGui
-    
-    -- Tombol Close
-    local btnClose = Instance.new("TextButton")
-    btnClose.Size = UDim2.new(0, 40, 0, 40)
-    btnClose.Position = UDim2.new(0.02, 0, 0.7, 0)
-    btnClose.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    btnClose.Text = "❌"
-    btnClose.TextSize = 20
-    btnClose.Font = Enum.Font.GothamBold
-    btnClose.Parent = flyGui
-    
-    -- Event handlers untuk touch
-    btnW.TouchBegan:Connect(function() flyCtrl.f = 1 end)
-    btnW.TouchEnded:Connect(function() flyCtrl.f = 0 end)
-    
-    btnS.TouchBegan:Connect(function() flyCtrl.b = -1 end)
-    btnS.TouchEnded:Connect(function() flyCtrl.b = 0 end)
-    
-    btnA.TouchBegan:Connect(function() flyCtrl.l = -1 end)
-    btnA.TouchEnded:Connect(function() flyCtrl.l = 0 end)
-    
-    btnD.TouchBegan:Connect(function() flyCtrl.r = 1 end)
-    btnD.TouchEnded:Connect(function() flyCtrl.r = 0 end)
-    
-    btnUp.TouchBegan:Connect(function() flyCtrl.up = 1 end)
-    btnUp.TouchEnded:Connect(function() flyCtrl.up = 0 end)
-    
-    btnDown.TouchBegan:Connect(function() flyCtrl.down = -1 end)
-    btnDown.TouchEnded:Connect(function() flyCtrl.down = 0 end)
-    
-    btnToggle.TouchBegan:Connect(function()
-        flying = not flying
-        if flying then
-            btnToggle.Text = "FLY ON"
-            btnToggle.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
-            Notify("FLY", "Fly: Enabled", "success", 2)
-            Fly()
-        else
-            btnToggle.Text = "FLY OFF"
-            btnToggle.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-            Notify("FLY", "Fly: Disabled", "info", 2)
-        end
-    end)
-    
-    btnClose.TouchBegan:Connect(function()
-        flyEnabled = false
-        StopFly()
-        if flyGui then flyGui:Destroy() end
-        Notify("FLY", "Fly mode removed", "info", 2)
-    end)
-    
-    flyButtons = {btnW, btnS, btnA, btnD, btnUp, btnDown, btnToggle, btnClose}
-end
-
-local function RemoveFlyButtons()
-    if flyGui then
-        flyGui:Destroy()
-        flyGui = nil
-    end
-    flyButtons = {}
-end
-
-local function Fly()
-    repeat task.wait() until LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("Humanoid")
-    
-    local plr = LocalPlayer
-    local rootPart = plr.Character.HumanoidRootPart
-    local humanoid = plr.Character.Humanoid
-    
-    bg = Instance.new("BodyGyro")
-    bg.P = 9e4
-    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bg.CFrame = rootPart.CFrame
-    bg.Parent = rootPart
-    
-    bv = Instance.new("BodyVelocity")
-    bv.velocity = Vector3.new(0, 0.1, 0)
-    bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-    bv.Parent = rootPart
-    
-    while flying and flyEnabled do
-        humanoid.PlatformStand = true
-        
-        local moveX = flyCtrl.l + flyCtrl.r
-        local moveZ = flyCtrl.f + flyCtrl.b
-        local moveY = flyCtrl.up + flyCtrl.down
-        
-        if moveX ~= 0 or moveZ ~= 0 or moveY ~= 0 then
-            flySpeed = flySpeed + 0.5 + (flySpeed / maxFlySpeed)
-            if flySpeed > maxFlySpeed then
-                flySpeed = maxFlySpeed
-            end
-        elseif speed ~= 0 then
-            flySpeed = flySpeed - 1
-            if flySpeed < 0 then
-                flySpeed = 0
-            end
-        end
-        
-        if moveX ~= 0 or moveZ ~= 0 or moveY ~= 0 then
-            local cam = workspace.CurrentCamera
-            local forward = cam.CFrame.LookVector
-            local right = cam.CFrame.RightVector
-            local up = cam.CFrame.UpVector
-            
-            local velocity = (forward * moveZ + right * moveX + up * moveY) * flySpeed
-            bv.velocity = velocity
-            lastFlyCtrl = {f = flyCtrl.f, b = flyCtrl.b, l = flyCtrl.l, r = flyCtrl.r}
-        elseif flySpeed ~= 0 then
-            local cam = workspace.CurrentCamera
-            local forward = cam.CFrame.LookVector
-            local right = cam.CFrame.RightVector
-            local velocity = (forward * (lastFlyCtrl.f + lastFlyCtrl.b) + right * (lastFlyCtrl.l + lastFlyCtrl.r)) * flySpeed
-            bv.velocity = velocity
-        else
-            bv.velocity = Vector3.new(0, 0.1, 0)
-        end
-        
-        if moveZ ~= 0 then
-            bg.CFrame = workspace.CurrentCamera.CFrame * CFrame.Angles(-math.rad(moveZ * 50 * flySpeed / maxFlySpeed), 0, 0)
-        end
-        task.wait()
-    end
-    
-    if bg then bg:Destroy() end
-    if bv then bv:Destroy() end
-    if humanoid then humanoid.PlatformStand = false end
-end
-
-local function StartFly()
-    if flyConnection then return end
-    if not LocalPlayer.Character then return end
-    
-    flying = true
-    
-    if isMobile then
-        CreateFlyButtons()
-    else
-        -- Untuk PC, pakai keyboard
-        local function onKeyDown(key)
-            key = key:lower()
-            if key == "e" then
-                flying = not flying
-                if flying then
-                    Notify("FLY", "Fly: Enabled", "success", 2)
-                    Fly()
-                else
-                    Notify("FLY", "Fly: Disabled", "info", 2)
-                end
-            elseif key == "w" then
-                flyCtrl.f = 1
-            elseif key == "s" then
-                flyCtrl.b = -1
-            elseif key == "a" then
-                flyCtrl.l = -1
-            elseif key == "d" then
-                flyCtrl.r = 1
-            end
-        end
-        
-        local function onKeyUp(key)
-            key = key:lower()
-            if key == "w" then
-                flyCtrl.f = 0
-            elseif key == "s" then
-                flyCtrl.b = 0
-            elseif key == "a" then
-                flyCtrl.l = 0
-            elseif key == "d" then
-                flyCtrl.r = 0
-            end
-        end
-        
-        local mouse = LocalPlayer:GetMouse()
-        flyKeyConnection = {
-            KeyDown = mouse.KeyDown:Connect(onKeyDown),
-            KeyUp = mouse.KeyUp:Connect(onKeyUp)
-        }
-    end
-    
-    Fly()
-end
-
-local function StopFly()
-    flying = false
-    if not isMobile then
-        if flyKeyConnection then
-            if flyKeyConnection.KeyDown then flyKeyConnection.KeyDown:Disconnect() end
-            if flyKeyConnection.KeyUp then flyKeyConnection.KeyUp:Disconnect() end
-            flyKeyConnection = nil
-        end
-    else
-        RemoveFlyButtons()
-    end
-    if bg then bg:Destroy() end
-    if bv then bv:Destroy() end
-    flyCtrl = {f = 0, b = 0, l = 0, r = 0, up = 0, down = 0}
-    flySpeed = 0
-    if LocalPlayer.Character and LocalPlayer.Character.Humanoid then
-        LocalPlayer.Character.Humanoid.PlatformStand = false
-    end
-end
-
-MainSection:AddToggle({
-    Text = "🕊️ Fly Mode " .. (isMobile and "(Touch Controls)" or "(Press E to toggle)"),
-    Default = false,
-    Callback = function(value)
-        flyEnabled = value
-        if value then
-            StartFly()
-            if isMobile then
-                Notify("FLY", "Fly mode enabled! Use on-screen buttons", "success", 3)
-            else
-                Notify("FLY", "Fly mode enabled! Press E to start flying", "success", 3)
-            end
-        else
-            StopFly()
-            Notify("FLY", "Fly mode disabled", "info", 2)
-        end
-    end
-})
-
 --// TELEPORT PLAYER
 
 local TeleportSection = MainTab:AddSection("🎯 Teleport to Player")
@@ -653,7 +335,7 @@ local AutoSummitSection = MainTab:AddSection("🏔️ Auto Summit")
 local autoSummitEnabled = false
 local autoSummitConnection = nil
 local currentCp = 1
-local cpDelay = 0.5
+local cpDelay = 1
 
 local function TeleportToCP(cpNumber)
     local character = LocalPlayer.Character
@@ -733,23 +415,14 @@ AutoSummitSection:AddToggle({
 
 AutoSummitSection:AddSlider({
     Text = "⏱️ Delay between CP (seconds)",
-    Min = 0.1,
-    Max = 5,
-    Default = 0.5,
+    Min = 1,
+    Max = 10,
+    Default = 1,
     Callback = function(value)
         cpDelay = value
         Notify("AUTO SUMMIT", "Delay set to: " .. string.format("%.1f", value) .. " seconds", "info", 1)
     end
 })
-
-AutoSummitSection:AddButton({
-    Text = "🔄 Reset Summit",
-    Callback = function()
-        currentCp = 1
-        Notify("AUTO SUMMIT", "Summit reset to CP1", "info", 2)
-    end
-})
-
 --// ESP
 
 local ESPSection = ESPTab:AddSection("👁️ ESP")
@@ -872,13 +545,15 @@ ESPSection:AddToggle({
 })
 
 ESPSection:AddDropdown({
-    Text = "🎨 ESP Color",
+    Text = "ESP Color",
     Options = {"Red", "Green", "Blue", "Yellow", "White", "Purple"},
     Default = "Red",
     Callback = function(option)
         espColor = espColors[option] or Color3.fromRGB(255, 0, 0)
         for _, espObj in pairs(espObjects) do
-            if espObj.highlight then espObj.highlight.FillColor = espColor end
+            if espObj.highlight then
+                espObj.highlight.FillColor = espColor
+            end
         end
     end
 })
@@ -912,7 +587,21 @@ Players.PlayerRemoving:Connect(function(plr)
     RemoveESP(plr)
 end)
 
+for _, plr in ipairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then
+        plr.CharacterAdded:Connect(function()
+            task.wait(0.7)
+            if espEnabled then
+                RemoveESP(plr)
+                CreateESP(plr)
+            end
+        end)
+    end
+end
+
 --// UTILITY - ANTI STAFF & ANTI AFK
+
+--// UTILITY - ANTI STAFF, ANTI AFK & HIDE NAME TAG
 
 local UtilitySection = UtilityTab:AddSection("🛡️ Anti Staff & Anti AFK")
 
@@ -1042,21 +731,81 @@ UtilitySection:AddToggle({
     end
 })
 
--- Auto update all features when character respawns
-LocalPlayer.CharacterAdded:Connect(function(character)
-    task.wait(0.6)
-    if speedEnabled then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then humanoid.WalkSpeed = walkspeedValue end
+-- HIDE NAME TAG (Sembunyikan Nama Player)
+local HideNameSection = UtilityTab:AddSection("🏷️ Hide Name Tag")
+
+local hideNameEnabled = false
+local hideNameConnections = {}
+
+local function HidePlayerName(plr)
+    if plr and plr ~= LocalPlayer and plr.Character then
+        local humanoid = plr.Character:FindFirstChildWhichIsA("Humanoid")
+        if humanoid then
+            humanoid.NameDisplayDistance = 0
+        end
     end
-    if noclipEnabled then EnableNoclip() end
-    if infinityJumpEnabled then EnableInfinityJump() end
-    if flyEnabled then
-        task.wait(0.5)
-        StopFly()
-        StartFly()
+end
+
+local function StartHideName()
+    -- Sembunyikan semua nama player yang sudah ada
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            HidePlayerName(plr)
+        end
     end
-end)
+    
+    -- Untuk player yang baru masuk
+    local playerAddedConn = Players.PlayerAdded:Connect(function(plr)
+        if plr ~= LocalPlayer then
+            task.wait(0.5)
+            HidePlayerName(plr)
+        end
+    end)
+    table.insert(hideNameConnections, playerAddedConn)
+    
+    -- Untuk karakter yang baru spawn
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local charAddedConn = plr.CharacterAdded:Connect(function()
+                task.wait(0.5)
+                HidePlayerName(plr)
+            end)
+            table.insert(hideNameConnections, charAddedConn)
+        end
+    end
+end
+
+local function StopHideName()
+    for _, conn in ipairs(hideNameConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    hideNameConnections = {}
+    
+    -- Kembalikan jarak tampil nama ke normal
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local humanoid = plr.Character:FindFirstChildWhichIsA("Humanoid")
+            if humanoid then
+                humanoid.NameDisplayDistance = 100
+            end
+        end
+    end
+end
+
+HideNameSection:AddToggle({
+    Text = "Hide Name",
+    Default = false,
+    Callback = function(value)
+        hideNameEnabled = value
+        if value then
+            StartHideName()
+            Notify("HIDE NAME", "Name tags hidden!", "success", 2)
+        else
+            StopHideName()
+            Notify("HIDE NAME", "Name tags restored", "info", 2)
+        end
+    end
+})
 
 print("✅ Anixly Hub Loaded Successfully!")
 print("🚀 Executor: " .. executorName)
