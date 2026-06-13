@@ -143,7 +143,6 @@ DashboardSection:AddButton({
                     Title = "SERVER HOP",
                     Message = "No other servers found!",
                     Theme = "error",
-                    Icon = IMAGE_ID,
                     Duration = 3
                 })
             end
@@ -152,7 +151,6 @@ DashboardSection:AddButton({
                 Title = "SERVER HOP",
                 Message = "Failed to fetch servers!",
                 Theme = "error",
-                Icon = IMAGE_ID,
                 Duration = 3
             })
         end
@@ -205,7 +203,6 @@ MainSection:AddToggle({
                 Title = "NOCLIP",
                 Message = "Noclip: Enabled",
                 Theme = "success",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         else
@@ -214,7 +211,6 @@ MainSection:AddToggle({
                 Title = "NOCLIP",
                 Message = "Noclip: Disabled",
                 Theme = "info",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         end
@@ -255,7 +251,6 @@ MainSection:AddToggle({
                 Title = "INFINITY JUMP",
                 Message = "Infinity Jump: Enabled",
                 Theme = "success",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         else
@@ -264,7 +259,6 @@ MainSection:AddToggle({
                 Title = "INFINITY JUMP",
                 Message = "Infinity Jump: Disabled",
                 Theme = "info",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         end
@@ -291,8 +285,7 @@ MainSection:AddToggle({
                     AnixlyUI:ShowNotification({
                         Title = "SPEED HACK",
                         Message = "Speed Hack: Enabled (" .. walkspeedValue .. " WS)",
-                        Theme = "success",
-                        Icon = IMAGE_ID,
+                        Theme = "success",                        
                         Duration = 2
                     })
                 else
@@ -300,8 +293,7 @@ MainSection:AddToggle({
                     AnixlyUI:ShowNotification({
                         Title = "SPEED HACK",
                         Message = "Speed Hack: Disabled",
-                        Theme = "info",
-                        Icon = IMAGE_ID,
+                        Theme = "info",                        
                         Duration = 2
                     })
                 end
@@ -329,8 +321,7 @@ MainSection:AddSlider({
         AnixlyUI:ShowNotification({
             Title = "WALKSPEED",
             Message = "WalkSpeed set to: " .. value,
-            Theme = "info",
-            Icon = IMAGE_ID,
+            Theme = "info",          
             Duration = 1
         })
     end
@@ -402,7 +393,6 @@ TeleportSection:AddButton({
                         Title = "TELEPORT",
                         Message = "Teleported to " .. selectedPlayer,
                         Theme = "success",
-                        Icon = IMAGE_ID,
                         Duration = 2
                     })
                 else
@@ -410,7 +400,6 @@ TeleportSection:AddButton({
                         Title = "TELEPORT",
                         Message = "Your character not found!",
                         Theme = "error",
-                        Icon = IMAGE_ID,
                         Duration = 2
                     })
                 end
@@ -419,7 +408,6 @@ TeleportSection:AddButton({
                     Title = "TELEPORT",
                     Message = "Target player not found or no character!",
                     Theme = "error",
-                    Icon = IMAGE_ID,
                     Duration = 2
                 })
             end
@@ -428,7 +416,6 @@ TeleportSection:AddButton({
                 Title = "TELEPORT",
                 Message = "Please select a player first!",
                 Theme = "warning",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         end
@@ -619,7 +606,6 @@ ESPSection:AddToggle({
                 Title = "ESP",
                 Message = "ESP Enabled",
                 Theme = "success",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         else
@@ -629,7 +615,6 @@ ESPSection:AddToggle({
                 Title = "ESP",
                 Message = "ESP Disabled",
                 Theme = "info",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         end
@@ -659,7 +644,6 @@ ESPSection:AddButton({
                 Title = "ESP",
                 Message = "ESP Refreshed",
                 Theme = "success",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         end
@@ -717,7 +701,6 @@ local function StartAntiAdmin()
                     Title = "⚠️ ADMIN DETECTED",
                     Message = name .. " [" .. keyword .. "] - Hopping server...",
                     Theme = "error",
-                    Icon = IMAGE_ID,
                     Duration = 5
                 })
                 
@@ -765,7 +748,6 @@ AntiAdminSection:AddToggle({
                 Title = "ANTI ADMIN",
                 Message = "Anti Admin: Enabled",
                 Theme = "success",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         else
@@ -774,7 +756,6 @@ AntiAdminSection:AddToggle({
                 Title = "ANTI ADMIN",
                 Message = "Anti Admin: Disabled",
                 Theme = "info",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         end
@@ -826,7 +807,6 @@ AntiAFKSection:AddToggle({
                 Title = "ANTI AFK",
                 Message = "Anti AFK: Enabled",
                 Theme = "success",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         else
@@ -835,7 +815,6 @@ AntiAFKSection:AddToggle({
                 Title = "ANTI AFK",
                 Message = "Anti AFK: Disabled",
                 Theme = "info",
-                Icon = IMAGE_ID,
                 Duration = 2
             })
         end

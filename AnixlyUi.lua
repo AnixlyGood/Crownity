@@ -1,6 +1,6 @@
 --// Anixly UI Library
 --// Version: 1.0.0
---// Premium Dashboard Edition
+--// 10 Tabs Edition
 
 local AnixlyUI = {}
 AnixlyUI.__index = AnixlyUI
@@ -231,8 +231,8 @@ function AnixlyUI:ShowNotification(config)
 
     local holder = Instance.new("Frame")
     holder.AnchorPoint = Vector2.new(1, 1)
-    holder.Size = UDim2.new(0, IsMobile and 300 or 360, 0, 82)
-    holder.Position = UDim2.new(1, 400, 1, -24)
+    holder.Size = UDim2.new(0, IsMobile and 310 or 370, 0, 86)
+    holder.Position = UDim2.new(1, 420, 1, -24)
     holder.BackgroundColor3 = Color3.fromRGB(12, 16, 28)
     holder.BackgroundTransparency = 0.04
     holder.BorderSizePixel = 0
@@ -245,40 +245,25 @@ function AnixlyUI:ShowNotification(config)
         ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 11, 20))
     }, 30)
 
-    local icon
-
-    if config.Icon then
-        icon = Instance.new("ImageLabel")
-        icon.Size = UDim2.new(0, 42, 0, 42)
-        icon.Position = UDim2.new(0, 14, 0.5, -21)
-        icon.BackgroundColor3 = accent
-        icon.BackgroundTransparency = 0.18
-        icon.Image = config.Icon
-        icon.ImageColor3 = Color3.new(1, 1, 1)
-        icon.ScaleType = Enum.ScaleType.Crop
-        icon.Parent = holder
-        corner(icon, 14)
-    else
-        icon = Instance.new("TextLabel")
-        icon.Size = UDim2.new(0, 42, 0, 42)
-        icon.Position = UDim2.new(0, 14, 0.5, -21)
-        icon.BackgroundColor3 = accent
-        icon.BackgroundTransparency = 0.08
-        icon.Text = icons[themeName] or "i"
-        icon.TextColor3 = Color3.new(1, 1, 1)
-        icon.Font = Enum.Font.GothamBlack
-        icon.TextSize = 22
-        icon.Parent = holder
-        corner(icon, 14)
-    end
+    local icon = Instance.new("TextLabel")
+    icon.Size = UDim2.new(0, 46, 0, 46)
+    icon.Position = UDim2.new(0, 14, 0.5, -23)
+    icon.BackgroundColor3 = accent
+    icon.BackgroundTransparency = 0.08
+    icon.Text = icons[themeName] or "i"
+    icon.TextColor3 = Color3.new(1, 1, 1)
+    icon.Font = Enum.Font.GothamBlack
+    icon.TextSize = 24
+    icon.Parent = holder
+    corner(icon, 15)
 
     makeText(holder, {
         Text = title,
         TextColor3 = accent,
         Font = Enum.Font.GothamBold,
         TextSize = 13,
-        Size = UDim2.new(1, -82, 0, 22),
-        Position = UDim2.new(0, 68, 0, 14)
+        Size = UDim2.new(1, -92, 0, 22),
+        Position = UDim2.new(0, 70, 0, 14)
     })
 
     makeText(holder, {
@@ -287,8 +272,8 @@ function AnixlyUI:ShowNotification(config)
         Font = Enum.Font.Gotham,
         TextSize = 12,
         TextWrapped = true,
-        Size = UDim2.new(1, -82, 0, 36),
-        Position = UDim2.new(0, 68, 0, 36),
+        Size = UDim2.new(1, -92, 0, 36),
+        Position = UDim2.new(0, 70, 0, 38),
         TextYAlignment = Enum.TextYAlignment.Top
     })
 
@@ -304,9 +289,10 @@ function AnixlyUI:ShowNotification(config)
 
     if duration > 0 then
         tween(bar, {Size = UDim2.new(0, 0, 0, 3)}, duration, Enum.EasingStyle.Linear)
+
         task.delay(duration, function()
             if gui.Parent then
-                tween(holder, {Position = UDim2.new(1, 400, 1, -24)}, 0.28)
+                tween(holder, {Position = UDim2.new(1, 420, 1, -24)}, 0.28)
                 task.wait(0.3)
                 gui:Destroy()
             end
@@ -503,6 +489,7 @@ function AnixlyUI:CreateWindow(config)
     window.ConfigData = {}
     window.MiniIcon = config.MiniIcon or config.Logo or "rbxassetid://2061475061"
     window.Logo = config.Logo or window.MiniIcon
+    window.MinimizeIcon = config.MinimizeIcon or window.MiniIcon
 
     local theme = window.Theme
 
@@ -586,37 +573,40 @@ function AnixlyUI:CreateWindow(config)
     controls.BackgroundTransparency = 1
     controls.Parent = header
 
-    local minimize = Instance.new("TextButton")
+    local minimize = Instance.new("ImageButton")
     minimize.Size = UDim2.new(0, 28, 0, 28)
     minimize.Position = UDim2.new(0, 6, 0.5, -14)
-    minimize.BackgroundColor3 = theme.warning
-    minimize.Text = "–"
-    minimize.TextColor3 = Color3.fromRGB(40, 30, 0)
-    minimize.Font = Enum.Font.GothamBlack
-    minimize.TextSize = 18
+    minimize.BackgroundColor3 = theme.card2
+    minimize.Image = window.MinimizeIcon
+    minimize.ImageColor3 = Color3.new(1, 1, 1)
+    minimize.ScaleType = Enum.ScaleType.Crop
     minimize.AutoButtonColor = false
     minimize.Parent = controls
     corner(minimize, 999)
+    local minimizeStroke = stroke(minimize, theme.accent, 1, 0.45)
 
-    local close = Instance.new("TextButton")
+    local close = Instance.new("ImageButton")
     close.Size = UDim2.new(0, 28, 0, 28)
     close.Position = UDim2.new(0, 42, 0.5, -14)
     close.BackgroundColor3 = theme.danger
-    close.Text = "×"
-    close.TextColor3 = Color3.new(1, 1, 1)
-    close.Font = Enum.Font.GothamBlack
-    close.TextSize = 18
+    close.Image = "rbxassetid://6023426923"
+    close.ImageColor3 = Color3.new(1, 1, 1)
+    close.ScaleType = Enum.ScaleType.Fit
     close.AutoButtonColor = false
     close.Parent = controls
     corner(close, 999)
 
-    local sidebar = Instance.new("Frame")
+    local sidebar = Instance.new("ScrollingFrame")
     sidebar.Name = "Sidebar"
     sidebar.Size = UDim2.new(0, SIDEBAR_WIDTH, 1, -HEADER_HEIGHT)
     sidebar.Position = UDim2.new(0, 0, 0, HEADER_HEIGHT)
     sidebar.BackgroundColor3 = theme.sidebar
     sidebar.BackgroundTransparency = 0.04
     sidebar.BorderSizePixel = 0
+    sidebar.ScrollBarThickness = IsMobile and 2 or 3
+    sidebar.ScrollBarImageColor3 = theme.accent
+    sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    sidebar.CanvasSize = UDim2.new(0, 0, 0, 0)
     sidebar.Parent = main
 
     local sideList = Instance.new("UIListLayout")
@@ -634,13 +624,14 @@ function AnixlyUI:CreateWindow(config)
     content.BackgroundTransparency = 1
     content.Parent = main
 
-    local mini = Instance.new("ImageButton")
+    local mini = Instance.new("TextButton")
     mini.Size = UDim2.new(0, IsMobile and 52 or 60, 0, IsMobile and 52 or 60)
     mini.Position = UDim2.new(0, 18, 0.5, -29)
     mini.BackgroundColor3 = theme.header
-    mini.Image = window.MiniIcon
-    mini.ImageColor3 = Color3.new(1, 1, 1)
-    mini.ScaleType = Enum.ScaleType.Crop
+    mini.Text = "☕"
+    mini.TextColor3 = Color3.new(1, 1, 1)
+    mini.Font = Enum.Font.GothamBlack
+    mini.TextSize = IsMobile and 24 or 28
     mini.Visible = false
     mini.AutoButtonColor = false
     mini.Parent = gui
@@ -780,7 +771,6 @@ function AnixlyUI:CreateWindow(config)
         sidebar.BackgroundColor3 = theme.sidebar
         headerIcon.BackgroundColor3 = theme.card
         mini.BackgroundColor3 = theme.header
-        mini.ImageColor3 = Color3.new(1, 1, 1)
         resize.TextColor3 = theme.accent
 
         AnixlyUI:ShowNotification({
@@ -909,7 +899,7 @@ function AnixlyUI:CreateWindow(config)
             })
 
             local arrow = makeText(headerFrame, {
-                Text = "▼",
+                Text = "⌄",
                 TextColor3 = theme.accent,
                 Font = Enum.Font.GothamBlack,
                 TextSize = 18,
@@ -920,7 +910,7 @@ function AnixlyUI:CreateWindow(config)
 
             headerFrame.MouseButton1Click:Connect(function()
                 section.Expanded = not section.Expanded
-                arrow.Text = section.Expanded and "▼" or "▶"
+                arrow.Text = section.Expanded and "⌄" or "›"
                 for _, item in ipairs(section.Items) do
                     item.Visible = section.Expanded
                 end
@@ -1236,7 +1226,7 @@ function AnixlyUI:CreateWindow(config)
                     if size <= 0 then return end
 
                     local percent = math.clamp((x - pos) / size, 0, 1)
-                    apply(min + (max - min) * percent)
+                    apply(min + (max - min) * percent, false)
                 end
 
                 bar.InputBegan:Connect(function(input)
@@ -1254,7 +1244,13 @@ function AnixlyUI:CreateWindow(config)
 
                 UIS.InputEnded:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        draggingSlider = false
+                        if draggingSlider then
+                            draggingSlider = false
+
+                            if cfg.Callback then
+                                cfg.Callback(value)
+                            end
+                        end
                     end
                 end)
 
