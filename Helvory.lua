@@ -29,7 +29,6 @@ local function GetExecutor()
         if tostring(result):find("Delta") or tostring(result):find("DELTA") then
             return "Delta"
         end
-
         return tostring(result)
     end
 
@@ -39,15 +38,12 @@ local function GetExecutor()
 
     if okDelta then
         local core = game:GetService("CoreGui")
-
         if core:FindFirstChild("Delta") or core:FindFirstChild("Delta Hub") then
             return "Delta"
         end
-
         if core:FindFirstChild("Fluxus") then
             return "Fluxus"
         end
-
         if core:FindFirstChild("Electron") then
             return "Electron"
         end
@@ -370,6 +366,98 @@ TeleportSection:AddButton({
     end
 })
 
+--// AUTO SUMMIT (CP1 - CP21)
+local AutoSummitSection = MainTab:AddSection("🏔️ Auto Summit")
+
+local autoSummitEnabled = false
+local autoSummitConnection = nil
+local currentCp = 1
+
+local function TeleportToCP(cpNumber)
+    local character = LocalPlayer.Character
+    if not character then return false end
+    
+    local target = workspace:FindFirstChild("Checkpoints")
+    if not target then
+        Notify("AUTO SUMMIT", "Checkpoints not found!", "error", 2)
+        return false
+    end
+    
+    local cpName = "CP" .. cpNumber
+    local cp = target:FindFirstChild(cpName)
+    
+    if not cp then
+        Notify("AUTO SUMMIT", cpName .. " not found!", "error", 2)
+        return false
+    end
+    
+    if cp:IsA("Model") then
+        character:PivotTo(cp:GetPivot() + Vector3.new(0, 3, 0))
+        return true
+    elseif cp:IsA("BasePart") then
+        character:PivotTo(cp.CFrame + Vector3.new(0, 3, 0))
+        return true
+    else
+        Notify("AUTO SUMMIT", "Target is not a Model or BasePart", "error", 2)
+        return false
+    end
+end
+
+local function StartAutoSummit()
+    if autoSummitConnection then return end
+    currentCp = 1
+    
+    autoSummitConnection = RunService.Heartbeat:Connect(function()
+        if autoSummitEnabled then
+            if currentCp <= 21 then
+                TeleportToCP(currentCp)
+                Notify("AUTO SUMMIT", "Teleporting to CP" .. currentCp, "info", 1)
+                currentCp = currentCp + 1
+                task.wait(0.5)
+            else
+                -- Selesai semua CP
+                autoSummitEnabled = false
+                if autoSummitConnection then
+                    autoSummitConnection:Disconnect()
+                    autoSummitConnection = nil
+                end
+                Notify("AUTO SUMMIT", "Summit Complete! Reached CP21", "success", 3)
+            end
+        end
+    end)
+end
+
+local function StopAutoSummit()
+    if autoSummitConnection then
+        autoSummitConnection:Disconnect()
+        autoSummitConnection = nil
+    end
+    currentCp = 1
+end
+
+AutoSummitSection:AddToggle({
+    Text = "🏔️ Auto Summit (CP1 - CP21)",
+    Default = false,
+    Callback = function(value)
+        autoSummitEnabled = value
+        if value then
+            StartAutoSummit()
+            Notify("AUTO SUMMIT", "Auto Summit: Enabled - Teleporting from CP1 to CP21", "success", 3)
+        else
+            StopAutoSummit()
+            Notify("AUTO SUMMIT", "Auto Summit: Disabled", "info", 2)
+        end
+    end
+})
+
+AutoSummitSection:AddButton({
+    Text = "🔄 Reset Summit",
+    Callback = function()
+        currentCp = 1
+        Notify("AUTO SUMMIT", "Summit reset to CP1", "info", 2)
+    end
+})
+
 --// ESP
 
 local ESPSection = ESPTab:AddSection("👁️ ESP")
@@ -591,43 +679,20 @@ for _, plr in ipairs(Players:GetPlayers()) do
     end
 end
 
---// UTILITY
+--// UTILITY - ANTI STAFF & ANTI AFK
 
-local UtilitySection = UtilityTab:AddSection("🛠️ Utility")
-
-UtilitySection:AddLabel("Utility loaded.")
-UtilitySection:AddLabel("Version: 1.0.0")
-UtilitySection:AddLabel("Executor: " .. executorName)
-
-UtilitySection:AddButton({
-    Text = "🔄 Rejoin Server",
-    Callback = function()
-        Notify("REJOIN", "Rejoining server...", "warning", 2)
-        task.wait(1)
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
-    end
-})
-
-local StaffAlertSection = UtilityTab:AddSection("🛡️ Staff Alert")
+local UtilitySection = UtilityTab:AddSection("🛡️ Anti Staff")
 
 local staffKeywords = {
-    "admin",
-    "mod",
-    "moderator",
-    "owner",
-    "creator",
-    "dev",
-    "developer",
-    "staff",
-    "manager",
-    "helper"
+    "admin", "mod", "moderator", "owner", "creator", "dev", "developer",
+    "staff", "manager", "super", "helper", "trial", "head",
+    "lead", "senior", "junior", "coordinator", "supervisor", "gm", "game master"
 }
 
-local staffAlertEnabled = false
-local staffAlertConnection = nil
-local lastStaffNotify = 0
+local antiStaffEnabled = false
+local antiStaffConnection = nil
 
-local function CheckForStaffName()
+local function CheckForStaff()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer then
             local nameLower = plr.Name:lower()
@@ -640,54 +705,72 @@ local function CheckForStaffName()
             end
         end
     end
-
     return false, nil, nil
 end
 
-StaffAlertSection:AddToggle({
-    Text = "🛡️ Staff Alert",
+local function StartAntiStaff()
+    if antiStaffConnection then return end
+    
+    antiStaffConnection = RunService.Heartbeat:Connect(function()
+        if antiStaffEnabled then
+            local found, name, keyword = CheckForStaff()
+            if found then
+                Notify("⚠️ STAFF DETECTED", name .. " [" .. keyword .. "] - Hopping server...", "error", 5)
+                task.wait(1)
+                
+                -- Server hop
+                local servers = {}
+                local success, result = pcall(function()
+                    return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
+                end)
+                
+                if success and result and result.data then
+                    for _, v in pairs(result.data) do
+                        if v.playing and v.id ~= game.JobId then
+                            table.insert(servers, v.id)
+                        end
+                    end
+                    
+                    if #servers > 0 then
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], LocalPlayer)
+                    else
+                        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+                    end
+                else
+                    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+                end
+            end
+        end
+    end)
+end
+
+local function StopAntiStaff()
+    if antiStaffConnection then
+        antiStaffConnection:Disconnect()
+        antiStaffConnection = nil
+    end
+end
+
+UtilitySection:AddToggle({
+    Text = "🛡️ Anti Staff",
     Default = false,
     Callback = function(value)
-        staffAlertEnabled = value
-
+        antiStaffEnabled = value
         if value then
-            if staffAlertConnection then
-                staffAlertConnection:Disconnect()
-            end
-
-            staffAlertConnection = RunService.Heartbeat:Connect(function()
-                if staffAlertEnabled and tick() - lastStaffNotify >= 8 then
-                    local found, name, keyword = CheckForStaffName()
-
-                    if found then
-                        lastStaffNotify = tick()
-
-                        Notify(
-                            "STAFF ALERT",
-                            name .. " detected keyword: " .. keyword,
-                            "warning",
-                            3
-                        )
-                    end
-                end
-            end)
-
-            Notify("STAFF ALERT", "Staff Alert: Enabled", "success", 2)
+            StartAntiStaff()
+            Notify("ANTI STAFF", "Anti Staff: Enabled - Will auto hop if staff detected", "success", 3)
         else
-            if staffAlertConnection then
-                staffAlertConnection:Disconnect()
-                staffAlertConnection = nil
-            end
-
-            Notify("STAFF ALERT", "Staff Alert: Disabled", "info", 2)
+            StopAntiStaff()
+            Notify("ANTI STAFF", "Anti Staff: Disabled", "info", 2)
         end
     end
 })
 
-local IdleSection = UtilityTab:AddSection("💤 Idle Reminder")
+-- Anti AFK
+local AntiAFKSection = UtilityTab:AddSection("💤 Anti AFK")
 
-local idleReminderEnabled = false
-local idleReminderConnection = nil
+local antiAFKEnabled = false
+local afkConnection = nil
 local lastInput = tick()
 
 UIS.InputBegan:Connect(function()
@@ -698,32 +781,43 @@ UIS.InputChanged:Connect(function()
     lastInput = tick()
 end)
 
-IdleSection:AddToggle({
-    Text = "💤 Idle Reminder",
+local function SimulateInput()
+    UIS.InputBegan:Fire(Enum.KeyCode.W, Enum.UserInputState.Begin)
+    task.wait(0.1)
+    UIS.InputEnded:Fire(Enum.KeyCode.W, Enum.UserInputState.End)
+end
+
+local function StartAntiAFK()
+    if afkConnection then return end
+    
+    afkConnection = RunService.Heartbeat:Connect(function()
+        if antiAFKEnabled then
+            if tick() - lastInput > 50 then
+                SimulateInput()
+                lastInput = tick()
+            end
+        end
+    end)
+end
+
+local function StopAntiAFK()
+    if afkConnection then
+        afkConnection:Disconnect()
+        afkConnection = nil
+    end
+end
+
+AntiAFKSection:AddToggle({
+    Text = "💤 Anti AFK",
     Default = false,
     Callback = function(value)
-        idleReminderEnabled = value
-
+        antiAFKEnabled = value
         if value then
-            if idleReminderConnection then
-                idleReminderConnection:Disconnect()
-            end
-
-            idleReminderConnection = RunService.Heartbeat:Connect(function()
-                if idleReminderEnabled and tick() - lastInput > 60 then
-                    lastInput = tick()
-                    Notify("IDLE REMINDER", "Lu udah idle sekitar 60 detik.", "warning", 3)
-                end
-            end)
-
-            Notify("IDLE REMINDER", "Idle Reminder: Enabled", "success", 2)
+            StartAntiAFK()
+            Notify("ANTI AFK", "Anti AFK: Enabled - You won't be kicked for inactivity", "success", 3)
         else
-            if idleReminderConnection then
-                idleReminderConnection:Disconnect()
-                idleReminderConnection = nil
-            end
-
-            Notify("IDLE REMINDER", "Idle Reminder: Disabled", "info", 2)
+            StopAntiAFK()
+            Notify("ANTI AFK", "Anti AFK: Disabled", "info", 2)
         end
     end
 })
