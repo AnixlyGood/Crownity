@@ -87,7 +87,7 @@ local UtilityTab = Window:CreateTab("Utility")
 
 --// DASHBOARD
 
-local DashboardSection = DashboardTab:AddSection("🍭  Information")
+local DashboardSection = DashboardTab:AddSection("🍭 Information")
 
 DashboardSection:AddLabel("═══════════════════════════════")
 DashboardSection:AddLabel("       WELCOME TO ANIXLY HUB")
@@ -101,17 +101,6 @@ DashboardSection:AddLabel("🆔 Game ID: " .. game.PlaceId)
 DashboardSection:AddLabel("🌍 Server ID: " .. string.sub(game.JobId, 1, 8) .. "...")
 DashboardSection:AddLabel("👥 Players Online: " .. #Players:GetPlayers())
 DashboardSection:AddLabel("⚡ Executor: " .. executorName)
-
-local ThemeSection = DashboardTab:AddSection("⚙️ Settings")
-
-ThemeSection:AddDropdown({
-    Text = "🎨 Theme",
-    Options = AnixlyUI:GetThemes(),
-    Default = "ANIXLY",
-    Callback = function(themeName)
-        Window:SetTheme(themeName)
-    end
-})
 
 DashboardSection:AddButton({
     Text = "🎲 Server Hop",
@@ -140,6 +129,26 @@ DashboardSection:AddButton({
         else
             Notify("SERVER HOP", "Failed to fetch servers.", "error", 3)
         end
+    end
+})
+
+DashboardSection:AddButton({
+    Text = "🔄 Rejoin Server",
+    Callback = function()
+        Notify("REJOIN", "Rejoining server...", "warning", 2)
+        task.wait(1)
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end
+})
+
+local ThemeSection = DashboardTab:AddSection("⚙️ Settings")
+
+ThemeSection:AddDropdown({
+    Text = "🎨 Theme",
+    Options = AnixlyUI:GetThemes(),
+    Default = "ANIXLY",
+    Callback = function(themeName)
+        Window:SetTheme(themeName)
     end
 })
 
@@ -341,6 +350,8 @@ local function TeleportToCP(cpNumber)
     local character = LocalPlayer.Character
     if not character then return false end
     
+    task.wait(0.2)
+    
     local target = workspace:FindFirstChild("Checkpoints")
     if not target then
         Notify("AUTO SUMMIT", "Checkpoints not found!", "error", 2)
@@ -349,6 +360,15 @@ local function TeleportToCP(cpNumber)
     
     local cpName = "CP" .. cpNumber
     local cp = target:FindFirstChild(cpName)
+    
+    if not cp then
+        for _, child in ipairs(target:GetChildren()) do
+            if child.Name:lower() == "cp" .. cpNumber then
+                cp = child
+                break
+            end
+        end
+    end
     
     if not cp then
         Notify("AUTO SUMMIT", cpName .. " not found!", "error", 2)
@@ -374,8 +394,8 @@ local function StartAutoSummit()
     autoSummitConnection = RunService.Heartbeat:Connect(function()
         if autoSummitEnabled then
             if currentCp <= 21 then
-                TeleportToCP(currentCp)
                 Notify("AUTO SUMMIT", "Teleporting to CP" .. currentCp, "info", 1)
+                TeleportToCP(currentCp)
                 currentCp = currentCp + 1
                 task.wait(cpDelay)
             else
@@ -423,6 +443,15 @@ AutoSummitSection:AddSlider({
         Notify("AUTO SUMMIT", "Delay set to: " .. string.format("%.1f", value) .. " seconds", "info", 1)
     end
 })
+
+AutoSummitSection:AddButton({
+    Text = "🔄 Reset Summit",
+    Callback = function()
+        currentCp = 1
+        Notify("AUTO SUMMIT", "Summit reset to CP1", "info", 2)
+    end
+})
+
 --// ESP
 
 local ESPSection = ESPTab:AddSection("👁️ ESP")
@@ -599,11 +628,9 @@ for _, plr in ipairs(Players:GetPlayers()) do
     end
 end
 
---// UTILITY - ANTI STAFF & ANTI AFK
+--// UTILITY
 
---// UTILITY - ANTI STAFF, ANTI AFK & HIDE NAME TAG
-
-local UtilitySection = UtilityTab:AddSection("🛡️ Anti Staff & Anti AFK")
+local UtilitySection = UtilityTab:AddSection("🛡️ Anti Staff")
 
 -- Anti Staff
 local staffKeywords = {
@@ -684,6 +711,8 @@ UtilitySection:AddToggle({
 })
 
 -- Anti AFK
+local AntiAFKSection = UtilityTab:AddSection("💤 Anti AFK")
+
 local antiAFKEnabled = false
 local afkConnection = nil
 local lastInput = tick()
@@ -716,7 +745,7 @@ local function StopAntiAFK()
     end
 end
 
-UtilitySection:AddToggle({
+AntiAFKSection:AddToggle({
     Text = "💤 Anti AFK",
     Default = false,
     Callback = function(value)
@@ -731,30 +760,55 @@ UtilitySection:AddToggle({
     end
 })
 
--- HIDE NAME TAG (Sembunyikan Nama Player)
+-- Hide Name Tag
 local HideNameSection = UtilityTab:AddSection("🏷️ Hide Name Tag")
 
 local hideNameEnabled = false
+local hideNameLoop = nil
 local hideNameConnections = {}
 
 local function HidePlayerName(plr)
-    if plr and plr ~= LocalPlayer and plr.Character then
-        local humanoid = plr.Character:FindFirstChildWhichIsA("Humanoid")
+    if not hideNameEnabled then return end
+    if not plr or plr == LocalPlayer then return end
+    
+    local character = plr.Character
+    if character then
+        local humanoid = character:FindFirstChildWhichIsA("Humanoid")
         if humanoid then
-            humanoid.NameDisplayDistance = 0
+            pcall(function()
+                humanoid.NameDisplayDistance = 0
+            end)
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("BillboardGui") then
+                pcall(function()
+                    child.Enabled = false
+                end)
+            end
         end
     end
 end
 
 local function StartHideName()
-    -- Sembunyikan semua nama player yang sudah ada
+    if hideNameLoop then return end
+    
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer then
             HidePlayerName(plr)
         end
     end
     
-    -- Untuk player yang baru masuk
+    hideNameLoop = RunService.Heartbeat:Connect(function()
+        if hideNameEnabled then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer then
+                    HidePlayerName(plr)
+                end
+            end
+        end
+    end)
+    
     local playerAddedConn = Players.PlayerAdded:Connect(function(plr)
         if plr ~= LocalPlayer then
             task.wait(0.5)
@@ -763,7 +817,6 @@ local function StartHideName()
     end)
     table.insert(hideNameConnections, playerAddedConn)
     
-    -- Untuk karakter yang baru spawn
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer then
             local charAddedConn = plr.CharacterAdded:Connect(function()
@@ -776,24 +829,37 @@ local function StartHideName()
 end
 
 local function StopHideName()
+    if hideNameLoop then
+        hideNameLoop:Disconnect()
+        hideNameLoop = nil
+    end
+    
     for _, conn in ipairs(hideNameConnections) do
         pcall(function() conn:Disconnect() end)
     end
     hideNameConnections = {}
     
-    -- Kembalikan jarak tampil nama ke normal
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character then
             local humanoid = plr.Character:FindFirstChildWhichIsA("Humanoid")
             if humanoid then
-                humanoid.NameDisplayDistance = 100
+                pcall(function()
+                    humanoid.NameDisplayDistance = 100
+                end)
+            end
+            for _, child in ipairs(plr.Character:GetDescendants()) do
+                if child:IsA("BillboardGui") then
+                    pcall(function()
+                        child.Enabled = true
+                    end)
+                end
             end
         end
     end
 end
 
 HideNameSection:AddToggle({
-    Text = "Hide Name",
+    Text = "🏷️ Hide Name Tag",
     Default = false,
     Callback = function(value)
         hideNameEnabled = value
@@ -806,6 +872,17 @@ HideNameSection:AddToggle({
         end
     end
 })
+
+-- Auto update all features when character respawns
+LocalPlayer.CharacterAdded:Connect(function(character)
+    task.wait(0.6)
+    if speedEnabled then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.WalkSpeed = walkspeedValue end
+    end
+    if noclipEnabled then EnableNoclip() end
+    if infinityJumpEnabled then EnableInfinityJump() end
+end)
 
 print("✅ Anixly Hub Loaded Successfully!")
 print("🚀 Executor: " .. executorName)
