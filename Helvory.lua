@@ -345,16 +345,26 @@ local autoSummitEnabled = false
 local autoSummitConnection = nil
 local currentCp = 1
 local cpDelay = 1
+local selectedTargetCP = "CP21"
+local isTeleporting = false
 
 local function TeleportToCP(cpNumber)
-    local character = LocalPlayer.Character
-    if not character then return false end
+    if isTeleporting then return false end
+    isTeleporting = true
     
-    task.wait(0.2)
+    local character = LocalPlayer.Character
+    if not character then 
+        isTeleporting = false
+        return false 
+    end
+    
+    -- Tunggu sebentar biar stabil
+    task.wait(0.3)
     
     local target = workspace:FindFirstChild("Checkpoints")
     if not target then
         Notify("AUTO SUMMIT", "Checkpoints not found!", "error", 2)
+        isTeleporting = false
         return false
     end
     
@@ -372,45 +382,83 @@ local function TeleportToCP(cpNumber)
     
     if not cp then
         Notify("AUTO SUMMIT", cpName .. " not found!", "error", 2)
+        isTeleporting = false
         return false
     end
     
+    -- Jeda sebelum teleport
+    task.wait(0.2)
+    
     if cp:IsA("Model") then
         character:PivotTo(cp:GetPivot() + Vector3.new(0, 3, 0))
-        return true
     elseif cp:IsA("BasePart") then
         character:PivotTo(cp.CFrame + Vector3.new(0, 3, 0))
-        return true
     else
         Notify("AUTO SUMMIT", "Target is not a Model or BasePart", "error", 2)
+        isTeleporting = false
         return false
     end
+    
+    -- Jeda setelah teleport
+    task.wait(0.3)
+    isTeleporting = false
+    return true
+end
+
+local function TeleportToSpecificCP(cpNumber)
+    if isTeleporting then 
+        Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
+        return false 
+    end
+    
+    local success = TeleportToCP(cpNumber)
+    if success then
+        Notify("AUTO SUMMIT", "Teleported to CP" .. cpNumber, "success", 2)
+    end
+    return success
 end
 
 local function StartAutoSummit()
     if autoSummitConnection then return end
+    if isTeleporting then 
+        Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
+        return
+    end
+    
     currentCp = 1
     
-    autoSummitConnection = RunService.Heartbeat:Connect(function()
-        if autoSummitEnabled then
-            if currentCp <= 21 then
+    -- Parse target CP
+    local targetNum = 21
+    if selectedTargetCP and selectedTargetCP ~= "All CP" then
+        targetNum = tonumber(selectedTargetCP:match("%d+")) or 21
+    end
+    
+    Notify("AUTO SUMMIT", "Starting from CP1 to " .. selectedTargetCP, "info", 2)
+    
+    -- Gunakan spawn agar tidak mengganggu main loop
+    task.spawn(function()
+        while autoSummitEnabled and currentCp <= targetNum do
+            if isTeleporting then
+                task.wait(0.5)
+            else
                 Notify("AUTO SUMMIT", "Teleporting to CP" .. currentCp, "info", 1)
                 TeleportToCP(currentCp)
                 currentCp = currentCp + 1
+                
+                -- Jeda sesuai setting delay
                 task.wait(cpDelay)
-            else
-                autoSummitEnabled = false
-                if autoSummitConnection then
-                    autoSummitConnection:Disconnect()
-                    autoSummitConnection = nil
-                end
-                Notify("AUTO SUMMIT", "Summit Complete! Reached CP21", "success", 3)
             end
+        end
+        
+        if currentCp > targetNum then
+            autoSummitEnabled = false
+            Notify("AUTO SUMMIT", "Summit Complete! Reached " .. selectedTargetCP, "success", 3)
         end
     end)
 end
 
 local function StopAutoSummit()
+    autoSummitEnabled = false
     if autoSummitConnection then
         autoSummitConnection:Disconnect()
         autoSummitConnection = nil
@@ -418,14 +466,26 @@ local function StopAutoSummit()
     currentCp = 1
 end
 
+-- Dropdown untuk pilih target CP
+local cpOptions = {"CP1", "CP2", "CP3", "CP4", "CP5", "CP6", "CP7", "CP8", "CP9", "CP10", "CP11", "CP12", "CP13", "CP14", "CP15", "CP16", "CP17", "CP18", "CP19", "CP20", "CP21"}
+AutoSummitSection:AddDropdown({
+    Text = "🎯 Target CP",
+    Options = cpOptions,
+    Default = "CP21",
+    Callback = function(option)
+        selectedTargetCP = option
+        Notify("AUTO SUMMIT", "Target CP set to: " .. option, "info", 2)
+    end
+})
+
 AutoSummitSection:AddToggle({
     Text = "🏔️ Auto Summit",
     Default = false,
     Callback = function(value)
-        autoSummitEnabled = value
         if value then
+            autoSummitEnabled = true
             StartAutoSummit()
-            Notify("AUTO SUMMIT", "Auto Summit: Enabled - Teleporting from CP1 to CP21", "success", 3)
+            Notify("AUTO SUMMIT", "Auto Summit: Enabled - Teleporting to " .. selectedTargetCP, "success", 3)
         else
             StopAutoSummit()
             Notify("AUTO SUMMIT", "Auto Summit: Disabled", "info", 2)
@@ -444,11 +504,12 @@ AutoSummitSection:AddSlider({
     end
 })
 
+-- Teleport ke CP tertentu (langsung)
 AutoSummitSection:AddButton({
-    Text = "🔄 Reset Summit",
+    Text = "📍 Teleport to Selected CP",
     Callback = function()
-        currentCp = 1
-        Notify("AUTO SUMMIT", "Summit reset to CP1", "info", 2)
+        local targetNum = tonumber(selectedTargetCP:match("%d+")) or 1
+        TeleportToSpecificCP(targetNum)
     end
 })
 
@@ -760,7 +821,7 @@ AntiAFKSection:AddToggle({
     end
 })
 
--- Hide Name Tag
+-- Hide Name Tag (Untuk Semua Player Termasuk Diri Sendiri)
 local HideNameSection = UtilityTab:AddSection("🏷️ Hide Name Tag")
 
 local hideNameEnabled = false
@@ -769,7 +830,7 @@ local hideNameConnections = {}
 
 local function HidePlayerName(plr)
     if not hideNameEnabled then return end
-    if not plr or plr == LocalPlayer then return end
+    if not plr then return end
     
     local character = plr.Character
     if character then
@@ -793,38 +854,40 @@ end
 local function StartHideName()
     if hideNameLoop then return end
     
+    -- Sembunyikan nama semua player termasuk diri sendiri
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            HidePlayerName(plr)
-        end
+        HidePlayerName(plr)
     end
     
+    -- Loop terus menerus untuk memastikan nama tetap tersembunyi
     hideNameLoop = RunService.Heartbeat:Connect(function()
         if hideNameEnabled then
             for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= LocalPlayer then
-                    HidePlayerName(plr)
-                end
+                HidePlayerName(plr)
             end
         end
     end)
     
+    -- Untuk player yang baru masuk
     local playerAddedConn = Players.PlayerAdded:Connect(function(plr)
-        if plr ~= LocalPlayer then
-            task.wait(0.5)
-            HidePlayerName(plr)
-        end
+        task.wait(0.5)
+        HidePlayerName(plr)
     end)
     table.insert(hideNameConnections, playerAddedConn)
     
+    -- Untuk karakter yang baru spawn
+    local charAddedConn = LocalPlayer.CharacterAdded:Connect(function(char)
+        task.wait(0.5)
+        HidePlayerName(LocalPlayer)
+    end)
+    table.insert(hideNameConnections, charAddedConn)
+    
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            local charAddedConn = plr.CharacterAdded:Connect(function()
-                task.wait(0.5)
-                HidePlayerName(plr)
-            end)
-            table.insert(hideNameConnections, charAddedConn)
-        end
+        local charAddedConn2 = plr.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            HidePlayerName(plr)
+        end)
+        table.insert(hideNameConnections, charAddedConn2)
     end
 end
 
@@ -839,8 +902,9 @@ local function StopHideName()
     end
     hideNameConnections = {}
     
+    -- Kembalikan jarak tampil nama ke normal untuk semua player
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
+        if plr.Character then
             local humanoid = plr.Character:FindFirstChildWhichIsA("Humanoid")
             if humanoid then
                 pcall(function()
@@ -859,13 +923,13 @@ local function StopHideName()
 end
 
 HideNameSection:AddToggle({
-    Text = "🏷️ Hide Name Tag",
+    Text = "🏷️ Hide Name Tag (Semua Player)",
     Default = false,
     Callback = function(value)
         hideNameEnabled = value
         if value then
             StartHideName()
-            Notify("HIDE NAME", "Name tags hidden!", "success", 2)
+            Notify("HIDE NAME", "Name tags hidden for all players (including yourself)!", "success", 3)
         else
             StopHideName()
             Notify("HIDE NAME", "Name tags restored", "info", 2)
