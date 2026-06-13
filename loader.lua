@@ -8,6 +8,7 @@ AnixlyUI:ShowKeySystem({
     Title = "ANIXLY KEY",
     Subtitle = "Masukkan key untuk membuka Anixly Hub",
     Key = "anixly123",
+    Icon = IMAGE_ID,
 
     Callback = function(success)
         if not success then
@@ -16,21 +17,21 @@ AnixlyUI:ShowKeySystem({
 
         local Window = AnixlyUI:CreateWindow({
             Title = "Anixly Hub",
+            Subtitle = "Version 1.0.0",
             Theme = "ANIXLY",
 
             MiniIcon = IMAGE_ID,
             Logo = IMAGE_ID,
-            LogoText = "",
 
             Size = {
-                Width = 520,
-                Height = 390
+                Width = 540,
+                Height = 405
             }
         })
 
         local MainTab = Window:CreateTab("Main", "rbxassetid://6023426945")
         local PlayerTab = Window:CreateTab("Player", "rbxassetid://6023426959")
-        local MiscTab = Window:CreateTab("Misc", "rbxassetid://6023426926")
+        local InfoTab = Window:CreateTab("Info", "rbxassetid://6023426926")
 
         local MainSection = MainTab:AddSection("Main Menu")
 
@@ -39,7 +40,7 @@ AnixlyUI:ShowKeySystem({
             Default = false,
             Callback = function(value)
                 AnixlyUI:ShowNotification({
-                    Title = "Anixly Notification",
+                    Title = "ANIXLY",
                     Message = "Auto Farm: " .. tostring(value),
                     Theme = "info",
                     Icon = IMAGE_ID,
@@ -57,6 +58,19 @@ AnixlyUI:ShowKeySystem({
             end
         })
 
+        MainSection:AddButton({
+            Text = "Test Notification",
+            Callback = function()
+                AnixlyUI:ShowNotification({
+                    Title = "SUCCESS",
+                    Message = "Anixly UI v1.0.0 berhasil jalan.",
+                    Theme = "success",
+                    Icon = IMAGE_ID,
+                    Duration = 3
+                })
+            end
+        })
+
         local PlayerSection = PlayerTab:AddSection("Player Settings")
 
         PlayerSection:AddSlider({
@@ -69,12 +83,54 @@ AnixlyUI:ShowKeySystem({
             end
         })
 
-        local MiscSection = MiscTab:AddSection("Info")
+        PlayerSection:AddKeybind({
+            Text = "Open Key",
+            Default = "RightShift",
+            Callback = function(key)
+                print("Keybind diganti:", key)
+            end,
+            Pressed = function()
+                print("Keybind ditekan")
+            end
+        })
 
-        MiscSection:AddImage({
+        local Progress = PlayerSection:AddProgressBar({
+            Text = "Loading Bar"
+        })
+
+        PlayerSection:AddButton({
+            Text = "Test Progress",
+            Callback = function()
+                for i = 0, 100, 10 do
+                    Progress:SetProgress(i)
+                    task.wait(0.1)
+                end
+            end
+        })
+
+        local InfoSection = InfoTab:AddSection("Dashboard")
+
+        InfoSection:AddImage({
             Image = IMAGE_ID,
             Text = "ANIXLY HUB",
-            Height = 150
+            Height = 170
+        })
+
+        InfoSection:AddLabel("Status: Online")
+        InfoSection:AddLabel("Version: 1.0.0")
+        InfoSection:AddLabel("Key: Verified")
+
+        InfoSection:AddButton({
+            Text = "Info Notification",
+            Callback = function()
+                AnixlyUI:ShowNotification({
+                    Title = "INFO",
+                    Message = "Ini tab Info model baru.",
+                    Theme = "info",
+                    Icon = IMAGE_ID,
+                    Duration = 3
+                })
+            end
         })
     end
 })

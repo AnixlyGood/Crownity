@@ -1,8 +1,10 @@
--- Anixly UI Framework v3 - Premium Edition
--- Reworked UI: cleaner layout, neon glass style, smoother animations, better mobile support.
+--// Anixly UI Library
+--// Version: 1.0.0
+--// Premium Dashboard Edition
 
 local AnixlyUI = {}
 AnixlyUI.__index = AnixlyUI
+AnixlyUI.Version = "1.0.0"
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
@@ -175,9 +177,9 @@ local THEMES = {
 
 AnixlyUI.Themes = THEMES
 
-local DEFAULT_SIZE = IsMobile and Vector2.new(330, 360) or Vector2.new(520, 390)
+local DEFAULT_SIZE = IsMobile and Vector2.new(330, 360) or Vector2.new(540, 405)
 local SIDEBAR_WIDTH = IsMobile and 90 or 118
-local HEADER_HEIGHT = IsMobile and 48 or 54
+local HEADER_HEIGHT = IsMobile and 58 or 64
 local COMPONENT_HEIGHT = IsMobile and 38 or 42
 
 function AnixlyUI:CreateTheme(id, data)
@@ -456,7 +458,7 @@ function AnixlyUI:ShowKeySystem(config)
             callback(true)
             AnixlyUI:ShowNotification({
                 Title = "SUCCESS",
-                Message = "Welcome to Anixly.",
+                Message = "Welcome to Anixly v" .. AnixlyUI.Version,
                 Theme = "success",
                 Duration = 2.5
             })
@@ -490,7 +492,8 @@ function AnixlyUI:CreateWindow(config)
     config = config or {}
 
     local window = {}
-    window.Title = config.Title or "Anixly UI"
+    window.Title = config.Title or "Anixly Hub"
+    window.Subtitle = config.Subtitle or ("Version " .. AnixlyUI.Version)
     window.ThemeId = config.Theme or "ANIXLY"
     window.Theme = THEMES[window.ThemeId] or THEMES.ANIXLY
     window.Width = (config.Size and config.Size.Width) or DEFAULT_SIZE.X
@@ -499,8 +502,7 @@ function AnixlyUI:CreateWindow(config)
     window.TabButtons = {}
     window.ConfigData = {}
     window.MiniIcon = config.MiniIcon or config.Logo or "rbxassetid://2061475061"
-    window.Logo = config.Logo or config.MiniIcon or "rbxassetid://2061475061"
-    window.LogoText = config.LogoText or "ANIXLY"
+    window.Logo = config.Logo or window.MiniIcon
 
     local theme = window.Theme
 
@@ -547,22 +549,35 @@ function AnixlyUI:CreateWindow(config)
     header.BorderSizePixel = 0
     header.Parent = main
 
-    makeText(header, {
-    Text = "",
-    TextColor3 = theme.accent,
-    Font = Enum.Font.GothamBlack,
-    TextSize = IsMobile and 15 or 17,
-    Size = UDim2.new(0, 20, 1, 0),
-    Position = UDim2.new(0, 16, 0, 0)
-   })
+    local headerIcon = Instance.new("ImageLabel")
+    headerIcon.Name = "HeaderIcon"
+    headerIcon.Size = UDim2.new(0, IsMobile and 38 or 42, 0, IsMobile and 38 or 42)
+    headerIcon.Position = UDim2.new(0, 14, 0.5, -(IsMobile and 19 or 21))
+    headerIcon.BackgroundColor3 = theme.card
+    headerIcon.BackgroundTransparency = 0.05
+    headerIcon.Image = window.MiniIcon
+    headerIcon.ImageColor3 = Color3.new(1, 1, 1)
+    headerIcon.ScaleType = Enum.ScaleType.Crop
+    headerIcon.Parent = header
+    corner(headerIcon, 13)
+    stroke(headerIcon, theme.accent, 1, 0.35)
 
     makeText(header, {
         Text = window.Title,
         TextColor3 = theme.text,
-        Font = Enum.Font.GothamBold,
-        TextSize = IsMobile and 12 or 13,
-        Size = UDim2.new(1, -210, 1, 0),
-        Position = UDim2.new(0, 100, 0, 0)
+        Font = Enum.Font.GothamBlack,
+        TextSize = IsMobile and 13 or 15,
+        Size = UDim2.new(1, -215, 0, 25),
+        Position = UDim2.new(0, 64, 0, IsMobile and 8 or 10)
+    })
+
+    makeText(header, {
+        Text = window.Subtitle,
+        TextColor3 = theme.subtext,
+        Font = Enum.Font.GothamMedium,
+        TextSize = IsMobile and 9 or 10,
+        Size = UDim2.new(1, -215, 0, 18),
+        Position = UDim2.new(0, 64, 0, IsMobile and 30 or 33)
     })
 
     local controls = Instance.new("Frame")
@@ -620,7 +635,7 @@ function AnixlyUI:CreateWindow(config)
     content.Parent = main
 
     local mini = Instance.new("ImageButton")
-    mini.Size = UDim2.new(0, IsMobile and 50 or 58, 0, IsMobile and 50 or 58)
+    mini.Size = UDim2.new(0, IsMobile and 52 or 60, 0, IsMobile and 52 or 60)
     mini.Position = UDim2.new(0, 18, 0.5, -29)
     mini.BackgroundColor3 = theme.header
     mini.Image = window.MiniIcon
@@ -763,6 +778,7 @@ function AnixlyUI:CreateWindow(config)
         mainStroke.Color = theme.accent
         header.BackgroundColor3 = theme.header
         sidebar.BackgroundColor3 = theme.sidebar
+        headerIcon.BackgroundColor3 = theme.card
         mini.BackgroundColor3 = theme.header
         mini.ImageColor3 = Color3.new(1, 1, 1)
         resize.TextColor3 = theme.accent
@@ -805,8 +821,8 @@ function AnixlyUI:CreateWindow(config)
 
         local tabBtn = Instance.new("TextButton")
         tabBtn.Size = UDim2.new(1, 0, 0, IsMobile and 48 or 54)
-        tabBtn.BackgroundColor3 = theme.card
-        tabBtn.BackgroundTransparency = 0.12
+        tabBtn.BackgroundColor3 = theme.bg2
+        tabBtn.BackgroundTransparency = 0.03
         tabBtn.Text = ""
         tabBtn.AutoButtonColor = false
         tabBtn.LayoutOrder = #self.Tabs + 1
@@ -819,7 +835,7 @@ function AnixlyUI:CreateWindow(config)
         iconLabel.Position = UDim2.new(0.5, -(IsMobile and 11 or 12), 0, 7)
         iconLabel.BackgroundTransparency = 1
         iconLabel.Image = icon or ""
-        iconLabel.ImageColor3 = theme.subtext
+        iconLabel.ImageColor3 = Color3.fromRGB(180, 210, 235)
         iconLabel.Parent = tabBtn
 
         makeText(tabBtn, {
@@ -845,9 +861,9 @@ function AnixlyUI:CreateWindow(config)
         local function activate()
             for _, data in ipairs(self.TabButtons) do
                 data.container.Visible = false
-                tween(data.button, {BackgroundColor3 = theme.card, BackgroundTransparency = 0.12}, 0.18)
+                tween(data.button, {BackgroundColor3 = theme.bg2, BackgroundTransparency = 0.03}, 0.18)
                 data.stroke.Transparency = 0.8
-                data.icon.ImageColor3 = theme.subtext
+                data.icon.ImageColor3 = Color3.fromRGB(180, 210, 235)
                 local txt = data.button:FindFirstChildOfClass("TextLabel")
                 if txt then txt.TextColor3 = theme.subtext end
             end
@@ -904,7 +920,7 @@ function AnixlyUI:CreateWindow(config)
 
             headerFrame.MouseButton1Click:Connect(function()
                 section.Expanded = not section.Expanded
-                arrow.Text = section.Expanded and "⌄" or "▲"
+                arrow.Text = section.Expanded and "⌄" or "›"
                 for _, item in ipairs(section.Items) do
                     item.Visible = section.Expanded
                 end
@@ -1422,6 +1438,8 @@ function AnixlyUI:CreateWindow(config)
             window:SetTheme(selected)
         end
     })
+
+    themeSection:AddLabel("Anixly UI v" .. AnixlyUI.Version)
 
     return window
 end
