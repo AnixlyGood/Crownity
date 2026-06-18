@@ -214,6 +214,8 @@ local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 local IMAGE_ID = "rbxassetid://2061475061"
@@ -275,7 +277,7 @@ local executorName = GetExecutor()
 
 local Window = AnixlyUI:CreateWindow({
     Title = "Anixly Hub",
-    Subtitle = "Version 1.0.0 | " .. executorName "|Mount Mahoni", 
+    Subtitle = "Version 1.0.0 | " .. executorName .. " | Mount Mahoni", -- FIX: tambahin ..
     Theme = "ANIXLY",
 
     MiniIcon = IMAGE_ID,
@@ -1382,16 +1384,6 @@ HideNameSection:AddToggle({
     end
 })
 
-LocalPlayer.CharacterAdded:Connect(function(character)
-    task.wait(0.6)
-    if speedEnabled then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then humanoid.WalkSpeed = walkspeedValue end
-    end
-    if noclipEnabled then EnableNoclip() end
-    if infinityJumpEnabled then EnableInfinityJump() end
-end)
-
 --// BYPASS CHAT & VOICE CHAT SECTION
 local BypassSection = UtilityTab:AddSection("💬 Bypass Chat & Voice Chat")
 
@@ -1754,17 +1746,7 @@ BypassSection:AddToggle({
     end
 })
 
--- Auto update all features when character respawns
-LocalPlayer.CharacterAdded:Connect(function(character)
-    task.wait(0.6)
-    if speedEnabled then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then humanoid.WalkSpeed = walkspeedValue end
-    end
-    if noclipEnabled then EnableNoclip() end
-    if infinityJumpEnabled then EnableInfinityJump() end
-end)
-
+-- Auto update all features when character respawns (FIX: Hanya 1)
 LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(0.6)
     if speedEnabled then
@@ -1776,9 +1758,6 @@ LocalPlayer.CharacterAdded:Connect(function(character)
 end)
 
 --// ANTI AFK AUTO ENABLE
-local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
 local lastInput = tick()
 local antiAFKConnection = nil
 
@@ -1804,5 +1783,5 @@ end
 StartAntiAFK()
 
 print("✅ Anixly Hub Loaded Successfully!")
-print("💤 Anti AFK Active! ")
+print("💤 Anti AFK Active!")
 print("🛡️ Anti Cheat Bypass Active!")
