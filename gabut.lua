@@ -3,11 +3,11 @@ repeat task.wait() until game:IsLoaded()
 local player = game.Players.LocalPlayer
 
 local CONFIG = {
-    DELAY = 8,
+    DELAY = 5,
     HIDE_CONSOLE = false,
     FAKE_LAG = true,
     BEHAVIOR_RANDOM = true,
-    BLOCK_REMOTES = true,
+    BLOCK_REMOTES = false,
 }
 
 -- Smart delay system
@@ -25,7 +25,7 @@ local function smartWait()
             end
         end)
         
-        if adonisReady and tick() - startTime > 5 then
+        if adonisReady and tick() - startTime > 3 then
             task.wait(2)
             break
         end
@@ -36,128 +36,12 @@ end
 
 smartWait()
 
-local metaProtected = false
+-- Metatable protection ringan
 pcall(function()
     local mt = getrawmetatable(game)
     setreadonly(mt, false)
     setreadonly(mt, true)
-    metaProtected = true
 end)
-
-if CONFIG.BLOCK_REMOTES then
-    local blockedRemotes = {
-        "Detected", "Kick", "Ban", "AdminDetection",
-        "AntiCheat", "Security", "LogExploit",
-        "AntiCheatDetection", "ReportExploit", "BanUser"
-    }
-    
-    local suspiciousPatterns = {
-        "detect", "kick", "ban", "log", "report",
-        "anticheat", "antitool", "cheatdetect"
-    }
-    
-    local allowedRemotes = {
-        "ResetCP", "Teleport", "SummitKitRemotes", "Checkpoints",
-        "TeleportTo", "CP", "MountSalora"
-    }
-    
-    if not getgenv().namecallHooked then
-        getgenv().namecallHooked = true
-        pcall(function()
-            local mt = getrawmetatable(game)
-            if mt and mt.__namecall then
-                local originalNamecall = mt.__namecall
-                setreadonly(mt, false)
-                
-                mt.__namecall = newcclosure(function(self, ...)
-                    local args = {...}
-                    local method = getnamecallmethod()
-                    
-                    if method == "Kick" then
-                        return nil
-                    end
-                    
-                    -- IZINKAN FireServer untuk teleport
-                    if method == "FireServer" or method == "InvokeServer" then
-                        local success2, remoteName = pcall(function() 
-                            if self and typeof(self) == "Instance" then
-                                return tostring(self.Name):lower()
-                            end
-                            return ""
-                        end)
-                        
-                        if success2 and remoteName and remoteName ~= "" then
-                            -- CEK APAKAH REMOTE DIIZINKAN (TELEPORT)
-                            local isAllowed = false
-                            for _, allowed in ipairs(allowedRemotes) do
-                                if remoteName:find(allowed:lower(), 1, true) then
-                                    isAllowed = true
-                                    break
-                                end
-                            end
-                            
-                            -- JIKA DIIZINKAN, LANJUTKAN NORMAL
-                            if isAllowed then
-                                return originalNamecall(self, table.unpack(args))
-                            end
-                            
-                            -- BLOCK REMOTE YANG MENGGUNAKAN KEYWORD TERLARANG
-                            for _, blocked in ipairs(blockedRemotes) do
-                                if remoteName:find(blocked:lower(), 1, true) then
-                                    if method == "InvokeServer" then
-                                        return nil
-                                    end
-                                    return
-                                end
-                            end
-                            
-                            for _, pattern in ipairs(suspiciousPatterns) do
-                                if remoteName:find(pattern, 1, true) then
-                                    if method == "InvokeServer" then
-                                        return nil
-                                    end
-                                    return
-                                end
-                            end
-                        end
-                    end
-                    
-                    return originalNamecall(self, table.unpack(args))
-                end)
-                
-                setreadonly(mt, true)
-            end
-        end)
-    end
-    
-    -- Kick protection
-    if not getgenv().playerKickHooked then
-        getgenv().playerKickHooked = true
-        pcall(function()
-            if player then
-                local kickMethod = player.Kick
-                if kickMethod and typeof(kickMethod) == "function" then
-                    player.Kick = newcclosure(function(...)
-                        return nil
-                    end)
-                end
-            end
-            
-            local playerMeta = getrawmetatable(player)
-            if playerMeta then
-                setreadonly(playerMeta, false)
-                local oldIndex = playerMeta.__index
-                playerMeta.__index = newcclosure(function(self, key)
-                    if key == "Kick" then
-                        return function() end
-                    end
-                    return oldIndex(self, key)
-                end)
-                setreadonly(playerMeta, true)
-            end
-        end)
-    end
-end
 
 -- Behavior randomization
 if CONFIG.BEHAVIOR_RANDOM then
@@ -189,27 +73,7 @@ if CONFIG.FAKE_LAG then
     end)
 end
 
--- GUI detection blocking
-task.spawn(function()
-    pcall(function()
-        local playerGui = player:WaitForChild("PlayerGui", 10)
-        if playerGui then
-            playerGui.DescendantAdded:Connect(function(gui)
-                pcall(function()
-                    if gui and gui.Parent and (gui:IsA("TextLabel") or gui:IsA("TextBox")) then
-                        local success, text = pcall(function() return gui.Text:lower() end)
-                        if success and text and (text:find("detect") or text:find("kick") or text:find("ban")) then
-                            pcall(function()
-                                gui.Text = ""
-                                gui.Visible = false
-                            end)
-                        end
-                    end
-                end)
-            end)
-        end
-    end)
-end)
+print("✅ Anti Cheat Bypass Active")
 
 --// ANIXLY HUB
 local AnixlyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/AnixlyGood/anixly-ui/refs/heads/main/AnixlyUi.lua"))()
@@ -219,6 +83,13 @@ local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local Lighting = game:GetService("Lighting")
+local settings = settings
+local CoreGui = game:GetService("CoreGui")
+local StarterGui = game:GetService("StarterGui")
+local TextService = game:GetService("TextService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VoiceChatService = game:GetService("VoiceChatService")
 
 local LocalPlayer = Players.LocalPlayer
 local IMAGE_ID = "rbxassetid://2061475061"
@@ -273,14 +144,14 @@ local function GetExecutor()
         return "Krnl"
     end
 
-    return "Unknown Executor"
+    return "Unknown"
 end
 
 local executorName = GetExecutor()
 
 local Window = AnixlyUI:CreateWindow({
     Title = "Anixly Hub",
-    Subtitle = "Version 1.0.0 | " .. executorName .. " | Mount Salora",
+    Subtitle = "Version 1.0.0 | " .. executorName,
     Theme = "ANIXLY",
 
     MiniIcon = IMAGE_ID,
@@ -294,8 +165,8 @@ local Window = AnixlyUI:CreateWindow({
 
 local DashboardTab = Window:CreateTab("Dashboard")
 local MainTab = Window:CreateTab("Main")
-local ESPTab = Window:CreateTab("ESP")
 local TeleportTab = Window:CreateTab("Teleport")
+local ESPTab = Window:CreateTab("ESP")
 local UtilityTab = Window:CreateTab("Utility")
 
 --// DASHBOARD
@@ -315,7 +186,7 @@ DashboardSection:AddLabel("🌍 Server ID: " .. string.sub(game.JobId, 1, 8) .. 
 DashboardSection:AddLabel("👥 Players Online: " .. #Players:GetPlayers())
 
 DashboardSection:AddButton({
-    Text = "🎲 Server Hop",
+    Text = "Server Hop",
     Callback = function()
         Notify("SERVER HOP", "Searching for new server...", "warning", 2)
 
@@ -345,7 +216,7 @@ DashboardSection:AddButton({
 })
 
 DashboardSection:AddButton({
-    Text = "🔄 Rejoin Server",
+    Text = "Rejoin Server",
     Callback = function()
         Notify("REJOIN", "Rejoining server...", "warning", 2)
         task.wait(1)
@@ -493,6 +364,8 @@ MainSection:AddSlider({
         end
     end
 })
+
+--// TELEPORT TAB
 
 -- Teleport to Player
 local TeleportToPlayerSection = TeleportTab:AddSection("🎯 Teleport to Player")
@@ -673,212 +546,9 @@ SpectateSection:AddButton({
     end
 })
 
---// AUTO SUMMIT (CP1 - CP21) LOOP MODE
-local AutoSummitSection = MainTab:AddSection("🏔️ Auto Summit (Mount Salora)")
+--// ESP TAB
 
-local autoSummitEnabled = false
-local currentCp = 1
-local cpDelay = 1
-local resetDelay = 2
-local loopCount = 0
-local selectedTargetCP = "CP21"
-local isTeleporting = false
-
-local function ResetToBasecamp()
-    -- LANGSUNG TELEPORT KE CP1, TIDAK PAKAI REMOTE EVENT
-    local success = TeleportToCP(1)
-    if success then
-        Notify("AUTO SUMMIT", "Respawn to basecamp...", "info", 2)
-        return true
-    else
-        Notify("AUTO SUMMIT", "Failed to reset to basecamp", "error", 2)
-        return false
-    end
-end
-
-local function TeleportToCP(cpNumber)
-    if isTeleporting then return false end
-    isTeleporting = true
-    
-    local character = LocalPlayer.Character
-    if not character then 
-        isTeleporting = false
-        return false 
-    end
-    
-    task.wait(0.2)
-    
-    local target = workspace:FindFirstChild("Checkpoints")
-    if not target then
-        Notify("AUTO SUMMIT", "Checkpoints not found!", "error", 2)
-        isTeleporting = false
-        return false
-    end
-    
-    local cpName = "CP" .. cpNumber
-    local cp = target:FindFirstChild(cpName)
-    
-    if not cp then
-        for _, child in ipairs(target:GetChildren()) do
-            if child.Name:lower() == "cp" .. cpNumber then
-                cp = child
-                break
-            end
-        end
-    end
-    
-    if not cp then
-        Notify("AUTO SUMMIT", cpName .. " not found!", "error", 2)
-        isTeleporting = false
-        return false
-    end
-    
-    -- Teleport langsung tanpa remote event
-    if cp:IsA("Model") then
-        character:PivotTo(cp:GetPivot() + Vector3.new(0, 3, 0))
-    elseif cp:IsA("BasePart") then
-        character:PivotTo(cp.CFrame + Vector3.new(0, 3, 0))
-    else
-        Notify("AUTO SUMMIT", "Target is not a Model or BasePart", "error", 2)
-        isTeleporting = false
-        return false
-    end
-    
-    task.wait(0.2)
-    isTeleporting = false
-    return true
-end
-
-local function TeleportToSpecificCP(cpNumber)
-    if isTeleporting then 
-        Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
-        return false 
-    end
-    
-    local success = TeleportToCP(cpNumber)
-    if success then
-        Notify("AUTO SUMMIT", "Teleported to CP" .. cpNumber, "success", 2)
-    end
-    return success
-end
-
-local function StartAutoSummit()
-    if isTeleporting then 
-        Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
-        return
-    end
-    
-    currentCp = 1
-    loopCount = loopCount + 1
-    
-    local targetNum = 21
-    if selectedTargetCP and selectedTargetCP ~= "All CP" then
-        targetNum = tonumber(selectedTargetCP:match("%d+")) or 21
-    end
-    
-    Notify("AUTO SUMMIT", "Loop #" .. loopCount .. " - Starting from CP1 to " .. selectedTargetCP, "info", 2)
-    
-    task.spawn(function()
-        while autoSummitEnabled and currentCp <= targetNum do
-            if isTeleporting then
-                task.wait(0.5)
-            else
-                Notify("AUTO SUMMIT", "Teleporting to CP" .. currentCp, "info", 1)
-                TeleportToCP(currentCp)
-                currentCp = currentCp + 1
-                task.wait(cpDelay)
-            end
-        end
-        
-        if currentCp > targetNum and autoSummitEnabled then
-            Notify("AUTO SUMMIT", "Reached " .. selectedTargetCP .. "! (Loop #" .. loopCount .. ")", "success", 2)
-            Notify("AUTO SUMMIT", "Waiting " .. resetDelay .. " seconds before reset...", "info", 2)
-            task.wait(resetDelay)
-            ResetToBasecamp()
-            task.wait(1)
-            
-            if autoSummitEnabled then
-                Notify("AUTO SUMMIT", "Starting new loop...", "info", 2)
-                task.wait(1)
-                StartAutoSummit()
-            end
-        end
-    end)
-end
-
-local function StopAutoSummit()
-    autoSummitEnabled = false
-    currentCp = 1
-    loopCount = 0
-end
-
-local cpOptions = {"CP1", "CP2", "CP3", "CP4", "CP5", "CP6", "CP7", "CP8", "CP9", "CP10", "CP11", "CP12", "CP13", "CP14", "CP15", "CP16", "CP17", "CP18", "CP19", "CP20", "CP21"}
-AutoSummitSection:AddDropdown({
-    Text = "🎯 Target CP",
-    Options = cpOptions,
-    Default = "CP21",
-    Callback = function(option)
-        selectedTargetCP = option
-        Notify("AUTO SUMMIT", "Target CP set to: " .. option, "info", 2)
-    end
-})
-
-AutoSummitSection:AddToggle({
-    Text = "🏔️ Auto Summit",
-    Default = false,
-    Callback = function(value)
-        if value then
-            autoSummitEnabled = true
-            loopCount = 0
-            StartAutoSummit()
-            Notify("AUTO SUMMIT", "Auto Summit: Enabled", "success", 3)
-        else
-            StopAutoSummit()
-            Notify("AUTO SUMMIT", "Auto Summit: Disabled", "info", 2)
-        end
-    end
-})
-
-AutoSummitSection:AddSlider({
-    Text = "⏱️ Delay between CP (seconds)",
-    Min = 1,
-    Max = 5,
-    Default = 1,
-    Callback = function(value)
-        cpDelay = value
-        Notify("AUTO SUMMIT", "CP Delay set to: " .. string.format("%.1f", value) .. " seconds", "info", 1)
-    end
-})
-
-AutoSummitSection:AddSlider({
-    Text = "⏱️ Reset Delay (seconds)",
-    Min = 1,
-    Max = 6,
-    Default = 2,
-    Callback = function(value)
-        resetDelay = value
-        Notify("AUTO SUMMIT", "Reset Delay set to: " .. string.format("%.1f", value) .. " seconds", "info", 1)
-    end
-})
-
-AutoSummitSection:AddButton({
-    Text = "📍 Teleport to Selected CP",
-    Callback = function()
-        local targetNum = tonumber(selectedTargetCP:match("%d+")) or 1
-        TeleportToSpecificCP(targetNum)
-    end
-})
-
-AutoSummitSection:AddButton({
-    Text = "🏠 Reset to Basecamp",
-    Callback = function()
-        ResetToBasecamp()
-    end
-})
-
---// ESP (Sama seperti sebelumnya)
-
-local ESPSection = ESPTab:AddSection("👁️ ESP")
+local ESPSection = ESPTab:AddSection("👁️ ESP Settings")
 
 local espEnabled = false
 local espObjects = {}
@@ -913,7 +583,7 @@ local function CreateESP(plr)
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "Anixly_ESP_Billboard"
     billboard.Size = UDim2.new(0, 200, 0, 45)
-    billboard.StudsOffset = Vector3.new(0, 2.8, 0)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
     billboard.AlwaysOnTop = true
     billboard.Parent = root
 
@@ -1011,6 +681,7 @@ ESPSection:AddDropdown({
     end
 })
 
+-- Auto update ESP when players join/leave
 Players.PlayerAdded:Connect(function(plr)
     plr.CharacterAdded:Connect(function()
         task.wait(0.7)
@@ -1037,8 +708,8 @@ for _, plr in ipairs(Players:GetPlayers()) do
     end
 end
 
-
 --// UTILITY
+
 -- Anti Lag / Boost FPS
 local AntiLagSection = UtilityTab:AddSection("⚡ Boost FPS & Visual")
 
@@ -1212,7 +883,8 @@ AntiLagSection:AddToggle({
     end
 })
 
-local UtilitySection = UtilityTab:AddSection("🛡️ Anti Staff")
+-- Anti Staff
+local AntiStaffSection = UtilityTab:AddSection("🛡️ Anti Staff")
 
 local staffKeywords = {
     "admin", "mod", "moderator", "owner", "creator", "dev", "developer",
@@ -1275,7 +947,7 @@ local function StopAntiStaff()
     end
 end
 
-UtilitySection:AddToggle({
+AntiStaffSection:AddToggle({
     Text = "Anti Staff",
     Default = false,
     Callback = function(value)
@@ -1286,6 +958,56 @@ UtilitySection:AddToggle({
         else
             StopAntiStaff()
             Notify("ANTI STAFF", "Anti Staff: Disabled", "info", 2)
+        end
+    end
+})
+
+-- Anti AFK
+local AntiAFKSection = UtilityTab:AddSection("💤 Anti AFK")
+
+local antiAFKEnabled = false
+local afkConnection = nil
+local lastInput = tick()
+
+UIS.InputBegan:Connect(function() lastInput = tick() end)
+UIS.InputChanged:Connect(function() lastInput = tick() end)
+
+local function SimulateInput()
+    UIS.InputBegan:Fire(Enum.KeyCode.W, Enum.UserInputState.Begin)
+    task.wait(0.1)
+    UIS.InputEnded:Fire(Enum.KeyCode.W, Enum.UserInputState.End)
+end
+
+local function StartAntiAFK()
+    if afkConnection then return end
+    afkConnection = RunService.Heartbeat:Connect(function()
+        if antiAFKEnabled then
+            if tick() - lastInput > 50 then
+                SimulateInput()
+                lastInput = tick()
+            end
+        end
+    end)
+end
+
+local function StopAntiAFK()
+    if afkConnection then
+        afkConnection:Disconnect()
+        afkConnection = nil
+    end
+end
+
+AntiAFKSection:AddToggle({
+    Text = "Anti AFK",
+    Default = false,
+    Callback = function(value)
+        antiAFKEnabled = value
+        if value then
+            StartAntiAFK()
+            Notify("ANTI AFK", "Anti AFK: Enabled", "success", 3)
+        else
+            StopAntiAFK()
+            Notify("ANTI AFK", "Anti AFK: Disabled", "info", 2)
         end
     end
 })
@@ -1763,7 +1485,7 @@ BypassSection:AddToggle({
     end
 })
 
--- Auto update all features when character respawns (FIX: Hanya 1)
+-- Auto update all features when character respawns
 LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(0.6)
     if speedEnabled then
@@ -1774,31 +1496,4 @@ LocalPlayer.CharacterAdded:Connect(function(character)
     if infinityJumpEnabled then EnableInfinityJump() end
 end)
 
---// ANTI AFK AUTO ENABLE
-local lastInput = tick()
-local antiAFKConnection = nil
-
-UIS.InputBegan:Connect(function() lastInput = tick() end)
-UIS.InputChanged:Connect(function() lastInput = tick() end)
-
-local function SimulateInput()
-    UIS.InputBegan:Fire(Enum.KeyCode.W, Enum.UserInputState.Begin)
-    task.wait(0.1)
-    UIS.InputEnded:Fire(Enum.KeyCode.W, Enum.UserInputState.End)
-end
-
-local function StartAntiAFK()
-    if antiAFKConnection then return end
-    antiAFKConnection = RunService.Heartbeat:Connect(function()
-        if tick() - lastInput > 50 then
-            SimulateInput()
-            lastInput = tick()
-        end
-    end)
-end
-
-StartAntiAFK()
-
 print("✅ Anixly Hub Loaded Successfully!")
-print("💤 Anti AFK Active!")
-print("🛡️ Anti Cheat Bypass Active!")
