@@ -1274,7 +1274,7 @@ UtilitySection:AddToggle({
 })
 
 -- Hide Name Tag
-local HideNameSection = UtilityTab:AddSection("Hide Name Tag")
+local HideNameSection = UtilityTab:AddSection("👀 Hide Name Tag")
 
 local hideNameEnabled = false
 local hideNameLoop = nil
