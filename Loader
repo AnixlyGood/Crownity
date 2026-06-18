@@ -1,5 +1,6 @@
 local games = {
     [136486728723265] = "https://raw.githubusercontent.com/AnixlyGood/Crownity/refs/heads/main/MountSalora.lua", -- Mount Salora
+    [117435130379570] = "", -- Mount Mahoni
 }
 
 local currentPlaceID = game.PlaceId
@@ -11,7 +12,7 @@ if scriptURL then
     print("Anixly Hub: Loading script for ID " .. (games[currentUniverseID] and "Universe" or "Place"))
     loadstring(game:HttpGet(scriptURL))()
 else
-    local msg = "\nMap not supported yet!\nPlaceId: " .. tostring(currentPlaceID) .. "\nUniverseId: " .. tostring(currentUniverseID)
+    local msg = "\nGa support gblk map nya!\nPlaceId: " .. tostring(currentPlaceID) .. "\nUniverseId: " .. tostring(currentUniverseID)
     game.Players.LocalPlayer:Kick(msg)
     print(msg)
 end
