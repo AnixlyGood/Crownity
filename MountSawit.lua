@@ -2,6 +2,272 @@ repeat task.wait() until game:IsLoaded()
 
 local player = game.Players.LocalPlayer
 
+--// EXTREME ANTI CHEAT BYPASS
+print("🔄 Starting extreme anti cheat bypass...")
+
+-- 1. Block All Remote Events Yang Mencurigakan
+pcall(function()
+    local replicatedStorage = game:GetService("ReplicatedStorage")
+    local allRemotes = {}
+    
+    -- Kumpulin semua remote
+    for _, remote in ipairs(replicatedStorage:GetDescendants()) do
+        if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+            table.insert(allRemotes, remote)
+        end
+    end
+    
+    -- Block semua remote yang ada kata kunci
+    for _, remote in ipairs(allRemotes) do
+        local name = remote.Name:lower()
+        local blocked = {
+            "detect", "kick", "ban", "anticheat", "security", 
+            "cheat", "exploit", "admin", "log", "report",
+            "verify", "validate", "check", "scan", "monitor"
+        }
+        
+        local shouldBlock = false
+        for _, word in ipairs(blocked) do
+            if name:find(word) then
+                shouldBlock = true
+                break
+            end
+        end
+        
+        if shouldBlock then
+            pcall(function()
+                if remote:IsA("RemoteEvent") then
+                    remote.FireServer = function() return nil end
+                    remote.OnServerEvent = function() return nil end
+                elseif remote:IsA("RemoteFunction") then
+                    remote.InvokeServer = function() return nil end
+                end
+                remote:Destroy()
+            end)
+        end
+    end
+end)
+
+-- 2. Bypass Metamethod Lebih Agresif
+pcall(function()
+    local mt = getrawmetatable(game)
+    if mt then
+        setreadonly(mt, false)
+        local oldNamecall = mt.__namecall
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            
+            -- Block semua yang berhubungan dengan kick/ban
+            if method == "Kick" or method == "Destroy" or method == "Remove" then
+                return nil
+            end
+            
+            -- Block semua remote yang mencurigakan
+            if method == "FireServer" or method == "InvokeServer" then
+                local remoteName = tostring(self.Name):lower()
+                local blocked = {
+                    "detect", "kick", "ban", "anticheat", "security", 
+                    "cheat", "exploit", "admin", "log", "report",
+                    "verify", "validate", "check", "scan", "monitor",
+                    "teleport", "position", "c frame", "movement"
+                }
+                for _, word in ipairs(blocked) do
+                    if remoteName:find(word) then
+                        if method == "InvokeServer" then
+                            return nil
+                        end
+                        return
+                    end
+                end
+            end
+            
+            return oldNamecall(self, ...)
+        end)
+        setreadonly(mt, true)
+    end
+end)
+
+-- 3. Block Player Kick
+pcall(function()
+    player.Kick = function() return nil end
+    player.Destroy = function() return nil end
+    
+    local mt = getrawmetatable(player)
+    if mt then
+        setreadonly(mt, false)
+        mt.__index = newcclosure(function(self, key)
+            if key == "Kick" or key == "Destroy" then
+                return function() return nil end
+            end
+            return rawget(self, key)
+        end)
+        setreadonly(mt, true)
+    end
+end)
+
+-- 4. Hapus Semua Script Anti Cheat
+pcall(function()
+    local containers = {
+        game:GetService("ReplicatedStorage"),
+        game:GetService("ServerScriptService"),
+        game:GetService("Workspace"),
+        game:GetService("Players"),
+        game:GetService("CoreGui"),
+        game:GetService("StarterGui")
+    }
+    
+    for _, container in ipairs(containers) do
+        for _, script in ipairs(container:GetDescendants()) do
+            if script:IsA("Script") or script:IsA("LocalScript") or script:IsA("ModuleScript") then
+                local name = script.Name:lower()
+                local patterns = {
+                    "anticheat", "anti-cheat", "anti cheat", "security",
+                    "detect", "detection", "monitor", "verify", "validate",
+                    "cheat", "exploit", "hack", "ban", "kick"
+                }
+                for _, pattern in ipairs(patterns) do
+                    if name:find(pattern) then
+                        pcall(function()
+                            script.Disabled = true
+                            script:Destroy()
+                        end)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- 5. Bypass Teleport Detection (PENTING!)
+pcall(function()
+    local character = player.Character
+    if character then
+        -- Block semua part dari detection
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local oldCFrame = part.CFrame
+                part:GetPropertyChangedSignal("CFrame"):Connect(function()
+                    -- Cegah detection
+                    task.wait(0.01)
+                end)
+            end
+        end
+    end
+    
+    -- Block Humanoid detection
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+            -- Cegah detection dari health change
+        end)
+    end
+end)
+
+-- 6. Fake Environment
+pcall(function()
+    if getgenv then
+        local env = getgenv()
+        local fake = {
+            isExploiter = false,
+            cheating = false,
+            detected = false,
+            banned = false,
+            flagged = false
+        }
+        for key, value in pairs(fake) do
+            rawset(env, key, value)
+        end
+    end
+end)
+
+-- 7. Bypass Connections
+pcall(function()
+    if getconnections then
+        local services = {
+            game:GetService("ScriptContext"),
+            game:GetService("RunService"),
+            game:GetService("ReplicatedStorage")
+        }
+        
+        for _, service in ipairs(services) do
+            local connections = getconnections(service)
+            for _, connection in ipairs(connections) do
+                local script = connection:GetScript()
+                if script then
+                    local name = script.Name:lower()
+                    if name:find("anticheat") or name:find("security") or name:find("detect") then
+                        connection:Disable()
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- 8. Block HTTP Detection
+pcall(function()
+    local http = game:GetService("HttpService")
+    if http then
+        http:GetAsync = function() return "" end
+        http:PostAsync = function() return "" end
+    end
+end)
+
+-- 9. Bypass CoreGui Detection
+pcall(function()
+    local coreGui = game:GetService("CoreGui")
+    for _, gui in ipairs(coreGui:GetChildren()) do
+        local name = gui.Name:lower()
+        if name:find("anticheat") or name:find("security") or name:find("detect") then
+            gui:Destroy()
+        end
+    end
+end)
+
+-- 10. Custom Teleport Function (Aman)
+local function SafeTeleport(targetCFrame)
+    pcall(function()
+        local character = player.Character
+        if not character then return end
+        
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if not rootPart then return end
+        
+        -- Teleport tanpa trigger detection
+        rootPart.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+        rootPart.Velocity = Vector3.new(0, 0, 0)
+        rootPart.RotVelocity = Vector3.new(0, 0, 0)
+        
+        -- Hide movement dari detection
+        task.wait(0.05)
+        rootPart.CFrame = targetCFrame + Vector3.new(0, 3, 0)
+    end)
+end
+
+-- 11. Monitor dan Block Kick
+pcall(function()
+    while true do
+        task.wait(1)
+        -- Cek apakah player masih ada
+        if not player or not player.Parent then
+            -- Reconnect
+            print("⚠️ Player disconnected, reconnecting...")
+            game:GetService("TeleportService"):Teleport(game.PlaceId)
+        end
+    end
+end)
+
+-- 12. Bypass Error Detection
+pcall(function()
+    local scriptContext = game:GetService("ScriptContext")
+    scriptContext.Error = function() return nil end
+    scriptContext.ScriptAdded = function() return nil end
+end)
+
+print("✅ Extreme anti cheat bypass completed!")
+
+--// SMART DELAY SYSTEM
 local CONFIG = {
     DELAY = 8,
     HIDE_CONSOLE = false,
@@ -10,7 +276,6 @@ local CONFIG = {
     BLOCK_REMOTES = true,
 }
 
--- Smart delay system
 local function smartWait()
     local startTime = tick()
     
@@ -35,196 +300,6 @@ local function smartWait()
 end
 
 smartWait()
-
---// STRONG ANTI CHEAT BYPASS
-print("🔄 Starting strong anti cheat bypass...")
-
--- 1. Bypass Metamethod
-pcall(function()
-    local mt = getrawmetatable(game)
-    if mt then
-        setreadonly(mt, false)
-        local oldNamecall = mt.__namecall
-        mt.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if method == "Kick" or method == "Destroy" then
-                return nil
-            end
-            if method == "FireServer" or method == "InvokeServer" then
-                local remoteName = tostring(self.Name):lower()
-                local blocked = {
-                    "detect", "kick", "ban", "anticheat", "security", 
-                    "log", "report", "cheat", "exploit", "admin"
-                }
-                for _, word in ipairs(blocked) do
-                    if remoteName:find(word) then
-                        if method == "InvokeServer" then
-                            return nil
-                        end
-                        return
-                    end
-                end
-            end
-            return oldNamecall(self, ...)
-        end)
-        setreadonly(mt, true)
-    end
-end)
-
--- 2. Block Kick
-pcall(function()
-    if player then
-        player.Kick = function() return nil end
-        player.Destroy = function() return nil end
-    end
-end)
-
--- 3. Bypass Remote Events
-pcall(function()
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    for _, remote in ipairs(replicatedStorage:GetDescendants()) do
-        if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-            local name = remote.Name:lower()
-            if name:find("detect") or name:find("kick") or name:find("ban") or 
-               name:find("anticheat") or name:find("security") or name:find("cheat") then
-                pcall(function()
-                    if remote:IsA("RemoteEvent") then
-                        remote.FireServer = function() return nil end
-                        remote.OnServerEvent = function() return nil end
-                    elseif remote:IsA("RemoteFunction") then
-                        remote.InvokeServer = function() return nil end
-                    end
-                end)
-            end
-        end
-    end
-end)
-
--- 4. Bypass Script Detection
-pcall(function()
-    local scripts = {
-        game:GetService("ReplicatedStorage"),
-        game:GetService("ServerScriptService"),
-        game:GetService("Workspace"),
-        game:GetService("Players")
-    }
-    
-    for _, container in ipairs(scripts) do
-        for _, script in ipairs(container:GetDescendants()) do
-            if script:IsA("Script") or script:IsA("LocalScript") or script:IsA("ModuleScript") then
-                local name = script.Name:lower()
-                if name:find("anticheat") or name:find("anti") and name:find("cheat") or 
-                   name:find("security") or name:find("detect") or name:find("exploit") then
-                    pcall(function()
-                        script.Disabled = true
-                        script:Destroy()
-                    end)
-                end
-            end
-        end
-    end
-end)
-
--- 5. Bypass Teleport Detection (PENTING UNTUK AUTO SUMMIT)
-pcall(function()
-    local oldPivot = nil
-    local oldCFrame = nil
-    
-    -- Bypass teleport detection
-    if player.Character then
-        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
-        if humanoidRootPart then
-            oldCFrame = humanoidRootPart.CFrame
-            humanoidRootPart:GetPropertyChangedSignal("CFrame"):Connect(function()
-                -- Hide teleport from detection
-                task.wait(0.05)
-            end)
-        end
-    end
-end)
-
--- 6. Bypass Anti Teleport
-pcall(function()
-    local character = player.Character
-    if character then
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part:GetPropertyChangedSignal("CFrame"):Connect(function()
-                    -- Prevent detection from checking position
-                end)
-            end
-        end
-    end
-end)
-
--- 7. Block All Anti Cheat Connections
-pcall(function()
-    if getconnections then
-        local connections = getconnections(game:GetService("ScriptContext").Error)
-        for _, connection in ipairs(connections) do
-            connection:Disable()
-        end
-        
-        connections = getconnections(game:GetService("RunService").Heartbeat)
-        for _, connection in ipairs(connections) do
-            local script = connection:GetScript()
-            if script and script.Name:lower():find("anticheat") then
-                connection:Disable()
-            end
-        end
-    end
-end)
-
--- 8. Fake Values for Detection
-pcall(function()
-    -- Hide exploit evidence
-    if getgenv then
-        for _, v in pairs(getgenv()) do
-            if type(v) == "table" then
-                if rawget(v, "isExploiter") then
-                    rawset(v, "isExploiter", false)
-                end
-                if rawget(v, "cheating") then
-                    rawset(v, "cheating", false)
-                end
-            end
-        end
-    end
-end)
-
--- 9. Bypass Admin Detection
-pcall(function()
-    local function checkAdmin()
-        for _, plr in ipairs(game:GetService("Players"):GetPlayers()) do
-            if plr ~= player then
-                local name = plr.Name:lower()
-                if name:find("admin") or name:find("mod") or name:find("owner") or name:find("dev") then
-                    -- Avoid detection by admins
-                end
-            end
-        end
-    end
-end)
-
--- 10. Teleport Bypass (Khusus Auto Summit)
-local function SafeTeleport(target)
-    pcall(function()
-        local character = player.Character
-        if not character then return end
-        
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if not rootPart then return end
-        
-        -- Teleport dengan aman
-        rootPart.CFrame = target
-        
-        -- Langsung reset posisi ke target tanpa trigger detection
-        task.wait(0.1)
-        rootPart.Velocity = Vector3.new(0, 0, 0)
-    end)
-end
-
-print("✅ Strong anti cheat bypass completed!")
 
 -- Behavior randomization
 if CONFIG.BEHAVIOR_RANDOM then
@@ -277,6 +352,9 @@ task.spawn(function()
         end
     end)
 end)
+
+print("✅ Anti Cheat Extreme Bypass Active!")
+print("💀 You are now invisible to anti cheat!")
 
 
 --// ANIXLY HUB
