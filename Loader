@@ -3,6 +3,7 @@ local games = {
     [117435130379570] = "https://raw.githubusercontent.com/AnixlyGood/Crownity/refs/heads/main/MountMahoni.lua", -- Mount Mahoni
     [100689340481763] = "https://raw.githubusercontent.com/AnixlyGood/Crownity/refs/heads/main/MountSawit.lua", -- Mount Sawit
     [74818343954312] = "https://raw.githubusercontent.com/AnixlyGood/Crownity/refs/heads/main/MountMimpi.lua", -- Mount your dream
+    [103697603001598] = "https://raw.githubusercontent.com/AnixlyGood/Crownity/refs/heads/main/MountSquish.lua", -- Mount Squish
 }
 
 local currentPlaceID = game.PlaceId
