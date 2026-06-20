@@ -946,11 +946,26 @@ local function TeleportToSpecificCP(cpNumber)
     return success
 end
 
+local function ResetToCP1()
+    Notify("AUTO SUMMIT", "Resetting to CP1...", "info", 2)
+    TeleportToCP(1)
+    task.wait(0.5)
+end
+
 local function StartAutoSummit()
     if isTeleporting then 
         Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
         return
     end
+    
+    -- Teleport ke CP4 dulu
+    Notify("AUTO SUMMIT", "Teleporting to CP4...", "info", 2)
+    TeleportToCP(4)
+    task.wait(1)
+    
+    -- Abis itu reset ke CP1
+    ResetToCP1()
+    task.wait(1)
     
     currentCp = 1
     loopCount = loopCount + 1
@@ -1036,6 +1051,13 @@ AutoSummitSection:AddButton({
     Callback = function()
         local targetNum = tonumber(selectedTargetCP:match("%d+")) or 1
         TeleportToSpecificCP(targetNum)
+    end
+})
+
+AutoSummitSection:AddButton({
+    Text = "🔄 Reset to CP1",
+    Callback = function()
+        ResetToCP1()
     end
 })
 
