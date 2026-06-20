@@ -449,166 +449,6 @@ MainSection:AddToggle({
     end
 })
 
-
-MainSection:AddToggle({
-    Text = "Fly",
-    Default = false,
-    Callback = function(value)
-        if value then
-            StartFly()
-        else
-            StopFly()
-        end
-    end
-})
-
-local flyActive = false
-local flySpeed = 50
-local flyBg = nil
-local flyBv = nil
-local flyConnection = nil
-local flyKeys = {w=false, a=false, s=false, d=false, space=false, c=false}
-
-local function StopFly()
-    flyActive = false
-    if flyBg then 
-        flyBg:Destroy() 
-        flyBg = nil 
-    end
-    if flyBv then 
-        flyBv:Destroy() 
-        flyBv = nil 
-    end
-    if flyConnection then 
-        flyConnection:Disconnect() 
-        flyConnection = nil 
-    end
-    
-    local char = LocalPlayer.Character
-    if char then
-        local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-        if humanoid then
-            humanoid.PlatformStand = false
-        end
-    end
-    Notify("FLY", "Fly: Disabled", "info", 2)
-end
-
-local function StartFly()
-    if flyActive then return end
-    
-    local char = LocalPlayer.Character
-    if not char then 
-        Notify("FLY", "No character found!", "error", 2)
-        return 
-    end
-    
-    local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-    if not humanoid then
-        Notify("FLY", "No humanoid found!", "error", 2)
-        return
-    end
-    
-    flyActive = true
-    humanoid.PlatformStand = true
-    
-    local torso = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-    if not torso then 
-        flyActive = false
-        Notify("FLY", "No torso found!", "error", 2)
-        return 
-    end
-    
-    flyBg = Instance.new("BodyGyro", torso)
-    flyBg.P = 9e4
-    flyBg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-    flyBg.cframe = torso.CFrame
-    
-    flyBv = Instance.new("BodyVelocity", torso)
-    flyBv.velocity = Vector3.new(0, 0.1, 0)
-    flyBv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-    
-    if flyConnection then
-        flyConnection:Disconnect()
-        flyConnection = nil
-    end
-    
-    flyConnection = RunService.RenderStepped:Connect(function()
-        if not flyActive then
-            if flyBg then 
-                flyBg:Destroy() 
-                flyBg = nil 
-            end
-            if flyBv then 
-                flyBv:Destroy() 
-                flyBv = nil 
-            end
-            if humanoid then
-                humanoid.PlatformStand = false
-            end
-            return
-        end
-        
-        local cam = workspace.CurrentCamera
-        if not cam then return end
-        
-        local moveVec = Vector3.new(0, 0, 0)
-        
-        -- Keyboard
-        if flyKeys.w then moveVec = moveVec + cam.CFrame.LookVector end
-        if flyKeys.s then moveVec = moveVec - cam.CFrame.LookVector end
-        if flyKeys.a then moveVec = moveVec - cam.CFrame.RightVector end
-        if flyKeys.d then moveVec = moveVec + cam.CFrame.RightVector end
-        if flyKeys.space then moveVec = moveVec + Vector3.new(0, 1, 0) end
-        if flyKeys.c then moveVec = moveVec - Vector3.new(0, 1, 0) end
-        
-        -- Analog (kiri)
-        local moveDir = humanoid.MoveDirection
-        if moveDir and moveDir.Magnitude > 0.1 then
-            -- Konversi MoveDirection ke arah kamera
-            local forward = cam.CFrame.LookVector * -moveDir.Z
-            local right = cam.CFrame.RightVector * moveDir.X
-            local analogVec = (forward + right)
-            moveVec = moveVec + analogVec
-        end
-        
-        if moveVec.Magnitude > 0 then
-            moveVec = moveVec.Unit * flySpeed
-            flyBv.velocity = moveVec
-        else
-            flyBv.velocity = Vector3.new(0, 0, 0)
-        end
-        
-        flyBg.cframe = cam.CFrame
-    end)
-    
-    Notify("FLY", "Fly: Enabled", "success", 3)
-end
-
--- Keyboard handler
-local UIS = game:GetService("UserInputService")
-
-UIS.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    local key = input.KeyCode
-    if key == Enum.KeyCode.W then flyKeys.w = true end
-    if key == Enum.KeyCode.A then flyKeys.a = true end
-    if key == Enum.KeyCode.S then flyKeys.s = true end
-    if key == Enum.KeyCode.D then flyKeys.d = true end
-    if key == Enum.KeyCode.Space then flyKeys.space = true end
-    if key == Enum.KeyCode.C then flyKeys.c = true end
-end)
-
-UIS.InputEnded:Connect(function(input)
-    local key = input.KeyCode
-    if key == Enum.KeyCode.W then flyKeys.w = false end
-    if key == Enum.KeyCode.A then flyKeys.a = false end
-    if key == Enum.KeyCode.S then flyKeys.s = false end
-    if key == Enum.KeyCode.D then flyKeys.d = false end
-    if key == Enum.KeyCode.Space then flyKeys.space = false end
-    if key == Enum.KeyCode.C then flyKeys.c = false end
-end)
-
 -- Speed Settings
 local speedEnabled = false
 local originalWalkspeed = 16
@@ -651,14 +491,286 @@ MainSection:AddSlider({
     end
 })
 
-MainSection:AddSlider({
+--// FLY SCRIPT FIXED (Taruh di Main Tab)
+local FlySection = MainTab:AddSection("✈️ Fly")
+
+local flyActive = false
+local flySpeed = 50
+
+local flyGyro = nil
+local flyVelocity = nil
+local flyRenderConnection = nil
+local flyInputBeganConnection = nil
+local flyInputEndedConnection = nil
+
+local flyKeys = {
+    W = false,
+    A = false,
+    S = false,
+    D = false,
+    Up = false,
+    Down = false
+}
+
+local function DisconnectFlyConnections()
+    if flyRenderConnection then
+        flyRenderConnection:Disconnect()
+        flyRenderConnection = nil
+    end
+
+    if flyInputBeganConnection then
+        flyInputBeganConnection:Disconnect()
+        flyInputBeganConnection = nil
+    end
+
+    if flyInputEndedConnection then
+        flyInputEndedConnection:Disconnect()
+        flyInputEndedConnection = nil
+    end
+end
+
+local function ResetFlyKeys()
+    for key in pairs(flyKeys) do
+        flyKeys[key] = false
+    end
+end
+
+local function StopFly(silent)
+    flyActive = false
+
+    DisconnectFlyConnections()
+    ResetFlyKeys()
+
+    if flyGyro then
+        flyGyro:Destroy()
+        flyGyro = nil
+    end
+
+    if flyVelocity then
+        flyVelocity:Destroy()
+        flyVelocity = nil
+    end
+
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+
+    if humanoid then
+        humanoid.PlatformStand = false
+        humanoid.AutoRotate = true
+    end
+
+    if root then
+        root.AssemblyLinearVelocity = Vector3.zero
+        root.AssemblyAngularVelocity = Vector3.zero
+    end
+
+    if not silent then
+        Notify("FLY", "Fly: Disabled", "info", 2)
+    end
+end
+
+local function StartFly()
+    if flyActive then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+
+    if not character or not humanoid or not root then
+        Notify("FLY", "Character belum siap!", "error", 2)
+        return
+    end
+
+    DisconnectFlyConnections()
+    ResetFlyKeys()
+
+    flyActive = true
+    humanoid.PlatformStand = true
+    humanoid.AutoRotate = false
+
+    -- Gunakan HumanoidRootPart supaya lebih stabil
+    flyGyro = Instance.new("BodyGyro")
+    flyGyro.Name = "AnixlyFlyGyro"
+    flyGyro.P = 90000
+    flyGyro.D = 1000
+    flyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+    flyGyro.CFrame = root.CFrame
+    flyGyro.Parent = root
+
+    flyVelocity = Instance.new("BodyVelocity")
+    flyVelocity.Name = "AnixlyFlyVelocity"
+    flyVelocity.P = 1250
+    flyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+    flyVelocity.Velocity = Vector3.zero
+    flyVelocity.Parent = root
+
+    flyInputBeganConnection = UIS.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed or not flyActive then
+            return
+        end
+
+        local key = input.KeyCode
+
+        if key == Enum.KeyCode.W then
+            flyKeys.W = true
+        elseif key == Enum.KeyCode.A then
+            flyKeys.A = true
+        elseif key == Enum.KeyCode.S then
+            flyKeys.S = true
+        elseif key == Enum.KeyCode.D then
+            flyKeys.D = true
+        elseif key == Enum.KeyCode.Space or key == Enum.KeyCode.E then
+            flyKeys.Up = true
+        elseif key == Enum.KeyCode.LeftControl
+            or key == Enum.KeyCode.RightControl
+            or key == Enum.KeyCode.C
+            or key == Enum.KeyCode.Q then
+            flyKeys.Down = true
+        end
+    end)
+
+    flyInputEndedConnection = UIS.InputEnded:Connect(function(input)
+        local key = input.KeyCode
+
+        if key == Enum.KeyCode.W then
+            flyKeys.W = false
+        elseif key == Enum.KeyCode.A then
+            flyKeys.A = false
+        elseif key == Enum.KeyCode.S then
+            flyKeys.S = false
+        elseif key == Enum.KeyCode.D then
+            flyKeys.D = false
+        elseif key == Enum.KeyCode.Space or key == Enum.KeyCode.E then
+            flyKeys.Up = false
+        elseif key == Enum.KeyCode.LeftControl
+            or key == Enum.KeyCode.RightControl
+            or key == Enum.KeyCode.C
+            or key == Enum.KeyCode.Q then
+            flyKeys.Down = false
+        end
+    end)
+
+    flyRenderConnection = RunService.RenderStepped:Connect(function()
+        if not flyActive then
+            return
+        end
+
+        if not character.Parent or humanoid.Health <= 0 then
+            StopFly(true)
+            return
+        end
+
+        local camera = workspace.CurrentCamera
+        if not camera or not flyGyro or not flyVelocity then
+            return
+        end
+
+        -- Arah kamera dibuat horizontal supaya tidak terbang miring/menukik
+        local cameraForward = Vector3.new(
+            camera.CFrame.LookVector.X,
+            0,
+            camera.CFrame.LookVector.Z
+        )
+
+        local cameraRight = Vector3.new(
+            camera.CFrame.RightVector.X,
+            0,
+            camera.CFrame.RightVector.Z
+        )
+
+        if cameraForward.Magnitude > 0 then
+            cameraForward = cameraForward.Unit
+        end
+
+        if cameraRight.Magnitude > 0 then
+            cameraRight = cameraRight.Unit
+        end
+
+        local moveVector = Vector3.zero
+
+        local keyboardMoving =
+            flyKeys.W or flyKeys.A or flyKeys.S or flyKeys.D
+
+        -- Keyboard
+        if flyKeys.W then
+            moveVector += cameraForward
+        end
+
+        if flyKeys.S then
+            moveVector -= cameraForward
+        end
+
+        if flyKeys.A then
+            moveVector -= cameraRight
+        end
+
+        if flyKeys.D then
+            moveVector += cameraRight
+        end
+
+        -- Mobile joystick / gamepad
+        -- MoveDirection sudah world-space, jadi jangan dikonversi lagi
+        if not keyboardMoving then
+            local analogDirection = humanoid.MoveDirection
+
+            if analogDirection.Magnitude > 0.05 then
+                moveVector += Vector3.new(
+                    analogDirection.X,
+                    0,
+                    analogDirection.Z
+                )
+            end
+        end
+
+        if flyKeys.Up then
+            moveVector += Vector3.new(0, 1, 0)
+        end
+
+        if flyKeys.Down then
+            moveVector -= Vector3.new(0, 1, 0)
+        end
+
+        if moveVector.Magnitude > 0.05 then
+            flyVelocity.Velocity = moveVector.Unit * flySpeed
+        else
+            flyVelocity.Velocity = Vector3.zero
+        end
+
+        -- Avatar hanya berputar kiri/kanan, tidak jungkir mengikuti kamera
+        if cameraForward.Magnitude > 0 then
+            flyGyro.CFrame = CFrame.lookAt(
+                root.Position,
+                root.Position + cameraForward
+            )
+        end
+    end)
+
+    Notify("FLY", "Fly: Enabled", "success", 2)
+end
+
+FlySection:AddToggle({
+    Text = "✈️ Fly",
+    Default = false,
+    Callback = function(value)
+        if value then
+            StartFly()
+        else
+            StopFly()
+        end
+    end
+})
+
+FlySection:AddSlider({
     Text = "🚀 Fly Speed",
     Min = 5,
     Max = 200,
     Default = 50,
     Callback = function(value)
-        flySpeed = value
-        Notify("FLY", "Speed set to: " .. value, "info", 1)
+        flySpeed = tonumber(value) or 50
+        Notify("FLY", "Speed: " .. tostring(flySpeed), "info", 1)
     end
 })
 
