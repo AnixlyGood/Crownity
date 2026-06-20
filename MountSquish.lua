@@ -462,7 +462,7 @@ MainSection:AddToggle({
     end
 })
 
-ocal flyActive = false
+local flyActive = false
 local flySpeed = 50
 local flyBg = nil
 local flyBv = nil
