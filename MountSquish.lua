@@ -449,6 +449,7 @@ MainSection:AddToggle({
     end
 })
 
+
 MainSection:AddToggle({
     Text = "Fly",
     Default = false,
@@ -461,49 +462,7 @@ MainSection:AddToggle({
     end
 })
 
--- Speed Settings
-local speedEnabled = false
-local originalWalkspeed = 16
-local walkspeedValue = 50
-
-MainSection:AddToggle({
-    Text = "Speed",
-    Default = false,
-    Callback = function(value)
-        speedEnabled = value
-        local character = LocalPlayer.Character
-        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            if value then
-                originalWalkspeed = humanoid.WalkSpeed
-                humanoid.WalkSpeed = walkspeedValue
-                Notify("SPEED", "Speed: Enabled (" .. tostring(walkspeedValue) .. ")", "success", 2)
-            else
-                humanoid.WalkSpeed = originalWalkspeed
-                Notify("SPEED", "Speed: Disabled", "info", 2)
-            end
-        end
-    end
-})
-
-MainSection:AddSlider({
-    Text = "🏃 WalkSpeed",
-    Min = 16,
-    Max = 250,
-    Default = 50,
-    Callback = function(value)
-        walkspeedValue = value
-        if speedEnabled then
-            local character = LocalPlayer.Character
-            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = value
-            end
-        end
-    end
-})
-
-local flyActive = false
+ocal flyActive = false
 local flySpeed = 50
 local flyBg = nil
 local flyBv = nil
@@ -650,6 +609,47 @@ UIS.InputEnded:Connect(function(input)
     if key == Enum.KeyCode.C then flyKeys.c = false end
 end)
 
+-- Speed Settings
+local speedEnabled = false
+local originalWalkspeed = 16
+local walkspeedValue = 50
+
+MainSection:AddToggle({
+    Text = "Speed",
+    Default = false,
+    Callback = function(value)
+        speedEnabled = value
+        local character = LocalPlayer.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if value then
+                originalWalkspeed = humanoid.WalkSpeed
+                humanoid.WalkSpeed = walkspeedValue
+                Notify("SPEED", "Speed: Enabled (" .. tostring(walkspeedValue) .. ")", "success", 2)
+            else
+                humanoid.WalkSpeed = originalWalkspeed
+                Notify("SPEED", "Speed: Disabled", "info", 2)
+            end
+        end
+    end
+})
+
+MainSection:AddSlider({
+    Text = "🏃 WalkSpeed",
+    Min = 16,
+    Max = 250,
+    Default = 50,
+    Callback = function(value)
+        walkspeedValue = value
+        if speedEnabled then
+            local character = LocalPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = value
+            end
+        end
+    end
+})
 
 MainSection:AddSlider({
     Text = "🚀 Fly Speed",
@@ -1020,7 +1020,7 @@ AutoSummitSection:AddDropdown({
 })
 
 AutoSummitSection:AddToggle({
-    Text = "🏔️ Auto Summit Mount Squish",
+    Text = "Auto Summit",
     Default = false,
     Callback = function(value)
         if value then
@@ -1051,13 +1051,6 @@ AutoSummitSection:AddButton({
     Callback = function()
         local targetNum = tonumber(selectedTargetCP:match("%d+")) or 1
         TeleportToSpecificCP(targetNum)
-    end
-})
-
-AutoSummitSection:AddButton({
-    Text = "🔄 Reset to CP1",
-    Callback = function()
-        ResetToCP1()
     end
 })
 
@@ -1400,7 +1393,7 @@ local UtilitySection = UtilityTab:AddSection("🛡️ Anti Staff")
 
 local staffKeywords = {
     "admin", "mod", "moderator", "owner", "creator", "dev", "developer",
-    "staff", "manager", "super", "helper", "head", "coordinator"
+    "staff", "manager", "super", "helper", "headadmin", "coordinator"
 }
 
 local antiStaffEnabled = false
