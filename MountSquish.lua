@@ -491,17 +491,19 @@ MainSection:AddSlider({
     end
 })
 
---// FLY SCRIPT FIXED (Taruh di Main Tab)
-local FlySection = MainTab:AddSection("✈️ Fly")
+--// FLY SCRIPT - CAMERA DIRECTION
+local FlySection = MainTab:AddSection("👻  Fly")
 
 local flyActive = false
 local flySpeed = 50
 
 local flyGyro = nil
 local flyVelocity = nil
-local flyRenderConnection = nil
-local flyInputBeganConnection = nil
-local flyInputEndedConnection = nil
+
+local renderConnection = nil
+local inputBeganConnection = nil
+local inputEndedConnection = nil
+local diedConnection = nil
 
 local flyKeys = {
     W = false,
@@ -512,26 +514,31 @@ local flyKeys = {
     Down = false
 }
 
-local function DisconnectFlyConnections()
-    if flyRenderConnection then
-        flyRenderConnection:Disconnect()
-        flyRenderConnection = nil
-    end
-
-    if flyInputBeganConnection then
-        flyInputBeganConnection:Disconnect()
-        flyInputBeganConnection = nil
-    end
-
-    if flyInputEndedConnection then
-        flyInputEndedConnection:Disconnect()
-        flyInputEndedConnection = nil
-    end
-end
-
 local function ResetFlyKeys()
     for key in pairs(flyKeys) do
         flyKeys[key] = false
+    end
+end
+
+local function DisconnectFlyConnections()
+    if renderConnection then
+        renderConnection:Disconnect()
+        renderConnection = nil
+    end
+
+    if inputBeganConnection then
+        inputBeganConnection:Disconnect()
+        inputBeganConnection = nil
+    end
+
+    if inputEndedConnection then
+        inputEndedConnection:Disconnect()
+        inputEndedConnection = nil
+    end
+
+    if diedConnection then
+        diedConnection:Disconnect()
+        diedConnection = nil
     end
 end
 
@@ -591,7 +598,6 @@ local function StartFly()
     humanoid.PlatformStand = true
     humanoid.AutoRotate = false
 
-    -- Gunakan HumanoidRootPart supaya lebih stabil
     flyGyro = Instance.new("BodyGyro")
     flyGyro.Name = "AnixlyFlyGyro"
     flyGyro.P = 90000
@@ -602,12 +608,12 @@ local function StartFly()
 
     flyVelocity = Instance.new("BodyVelocity")
     flyVelocity.Name = "AnixlyFlyVelocity"
-    flyVelocity.P = 1250
+    flyVelocity.P = 1500
     flyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
     flyVelocity.Velocity = Vector3.zero
     flyVelocity.Parent = root
 
-    flyInputBeganConnection = UIS.InputBegan:Connect(function(input, gameProcessed)
+    inputBeganConnection = UIS.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed or not flyActive then
             return
         end
@@ -616,44 +622,64 @@ local function StartFly()
 
         if key == Enum.KeyCode.W then
             flyKeys.W = true
+
         elseif key == Enum.KeyCode.A then
             flyKeys.A = true
+
         elseif key == Enum.KeyCode.S then
             flyKeys.S = true
+
         elseif key == Enum.KeyCode.D then
             flyKeys.D = true
-        elseif key == Enum.KeyCode.Space or key == Enum.KeyCode.E then
+
+        elseif key == Enum.KeyCode.Space
+            or key == Enum.KeyCode.E then
+
             flyKeys.Up = true
+
         elseif key == Enum.KeyCode.LeftControl
             or key == Enum.KeyCode.RightControl
             or key == Enum.KeyCode.C
             or key == Enum.KeyCode.Q then
+
             flyKeys.Down = true
         end
     end)
 
-    flyInputEndedConnection = UIS.InputEnded:Connect(function(input)
+    inputEndedConnection = UIS.InputEnded:Connect(function(input)
         local key = input.KeyCode
 
         if key == Enum.KeyCode.W then
             flyKeys.W = false
+
         elseif key == Enum.KeyCode.A then
             flyKeys.A = false
+
         elseif key == Enum.KeyCode.S then
             flyKeys.S = false
+
         elseif key == Enum.KeyCode.D then
             flyKeys.D = false
-        elseif key == Enum.KeyCode.Space or key == Enum.KeyCode.E then
+
+        elseif key == Enum.KeyCode.Space
+            or key == Enum.KeyCode.E then
+
             flyKeys.Up = false
+
         elseif key == Enum.KeyCode.LeftControl
             or key == Enum.KeyCode.RightControl
             or key == Enum.KeyCode.C
             or key == Enum.KeyCode.Q then
+
             flyKeys.Down = false
         end
     end)
 
-    flyRenderConnection = RunService.RenderStepped:Connect(function()
+    diedConnection = humanoid.Died:Connect(function()
+        StopFly(true)
+    end)
+
+    renderConnection = RunService.RenderStepped:Connect(function()
         if not flyActive then
             return
         end
@@ -664,37 +690,24 @@ local function StartFly()
         end
 
         local camera = workspace.CurrentCamera
+
         if not camera or not flyGyro or not flyVelocity then
             return
         end
 
-        -- Arah kamera dibuat horizontal supaya tidak terbang miring/menukik
-        local cameraForward = Vector3.new(
-            camera.CFrame.LookVector.X,
-            0,
-            camera.CFrame.LookVector.Z
-        )
-
-        local cameraRight = Vector3.new(
-            camera.CFrame.RightVector.X,
-            0,
-            camera.CFrame.RightVector.Z
-        )
-
-        if cameraForward.Magnitude > 0 then
-            cameraForward = cameraForward.Unit
-        end
-
-        if cameraRight.Magnitude > 0 then
-            cameraRight = cameraRight.Unit
-        end
+        -- Arah kamera penuh, termasuk atas dan bawah
+        local cameraForward = camera.CFrame.LookVector
+        local cameraRight = camera.CFrame.RightVector
 
         local moveVector = Vector3.zero
 
         local keyboardMoving =
-            flyKeys.W or flyKeys.A or flyKeys.S or flyKeys.D
+            flyKeys.W
+            or flyKeys.A
+            or flyKeys.S
+            or flyKeys.D
 
-        -- Keyboard
+        -- Keyboard mengikuti arah kamera
         if flyKeys.W then
             moveVector += cameraForward
         end
@@ -711,20 +724,44 @@ local function StartFly()
             moveVector += cameraRight
         end
 
-        -- Mobile joystick / gamepad
-        -- MoveDirection sudah world-space, jadi jangan dikonversi lagi
+        -- Joystick mobile / controller
         if not keyboardMoving then
-            local analogDirection = humanoid.MoveDirection
+            local moveDirection = humanoid.MoveDirection
 
-            if analogDirection.Magnitude > 0.05 then
-                moveVector += Vector3.new(
-                    analogDirection.X,
+            if moveDirection.Magnitude > 0.05 then
+                local flatForward = Vector3.new(
+                    cameraForward.X,
                     0,
-                    analogDirection.Z
+                    cameraForward.Z
                 )
+
+                local flatRight = Vector3.new(
+                    cameraRight.X,
+                    0,
+                    cameraRight.Z
+                )
+
+                if flatForward.Magnitude > 0.001 then
+                    flatForward = flatForward.Unit
+                else
+                    flatForward = Vector3.new(0, 0, -1)
+                end
+
+                if flatRight.Magnitude > 0.001 then
+                    flatRight = flatRight.Unit
+                else
+                    flatRight = Vector3.new(1, 0, 0)
+                end
+
+                local forwardAmount = moveDirection:Dot(flatForward)
+                local rightAmount = moveDirection:Dot(flatRight)
+
+                moveVector += cameraForward * forwardAmount
+                moveVector += cameraRight * rightAmount
             end
         end
 
+        -- Naik dan turun manual
         if flyKeys.Up then
             moveVector += Vector3.new(0, 1, 0)
         end
@@ -739,20 +776,19 @@ local function StartFly()
             flyVelocity.Velocity = Vector3.zero
         end
 
-        -- Avatar hanya berputar kiri/kanan, tidak jungkir mengikuti kamera
-        if cameraForward.Magnitude > 0 then
-            flyGyro.CFrame = CFrame.lookAt(
-                root.Position,
-                root.Position + cameraForward
-            )
-        end
+        -- Badan mengikuti arah kamera
+        flyGyro.CFrame = CFrame.lookAt(
+            root.Position,
+            root.Position + cameraForward,
+            camera.CFrame.UpVector
+        )
     end)
 
     Notify("FLY", "Fly: Enabled", "success", 2)
 end
 
 FlySection:AddToggle({
-    Text = "✈️ Fly",
+    Text = "Fly",
     Default = false,
     Callback = function(value)
         if value then
@@ -773,6 +809,13 @@ FlySection:AddSlider({
         Notify("FLY", "Speed: " .. tostring(flySpeed), "info", 1)
     end
 })
+
+-- Matikan fly saat karakter respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    if flyActive then
+        StopFly(true)
+    end
+end)
 
 --// TELEPORT TAB
 
