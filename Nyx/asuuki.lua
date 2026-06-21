@@ -415,11 +415,11 @@ local Window = AnixlyUI:CreateWindow({
     }
 })
 
-local DashboardTab = Window:CreateTab("📜", "Dashboard")
-local MainTab = Window:CreateTab("🍬", "Main")
-local ESPTab = Window:CreateTab("⛄", "ESP")
-local TeleportTab = Window:CreateTab("👥", "Teleport")
-local UtilityTab = Window:CreateTab("⚙️", "Utility")
+local DashboardTab = Window:CreateTab("Dashboard")
+local MainTab = Window:CreateTab("Main")
+local ESPTab = Window:CreateTab("ESP")
+local TeleportTab = Window:CreateTab("Teleport")
+local UtilityTab = Window:CreateTab("Utility")
 
 --// DASHBOARD
 
@@ -715,7 +715,7 @@ MainSection:AddSlider({
     end
 })
 
-local UtilitySection = MainTab:AddSection("👻 Invisible Mode")
+local MainSection = MainTab:AddSection("👻 Invisible Mode")
 
 local invisibleEnabled = false
 local invisibleConnection = nil
@@ -883,7 +883,7 @@ local function StartFly()
     humanoid.AutoRotate = false
 
     flyGyro = Instance.new("BodyGyro")
-    flyGyro.Name = "AnixlyFlyGyro"
+    flyGyro.Name = "NyxFlyGyro"
     flyGyro.P = 90000
     flyGyro.D = 1000
     flyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
@@ -891,7 +891,7 @@ local function StartFly()
     flyGyro.Parent = root
 
     flyVelocity = Instance.new("BodyVelocity")
-    flyVelocity.Name = "AnixlyFlyVelocity"
+    flyVelocity.Name = "NyxFlyVelocity"
     flyVelocity.P = 1500
     flyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
     flyVelocity.Velocity = Vector3.zero
@@ -1143,7 +1143,6 @@ local function GetPlayerList()
     return list
 end
 
--- Mendukung beberapa versi dropdown Anixly UI
 local function UpdateDropdownOptions(dropdown, options)
     if not dropdown then
         return false
@@ -2347,10 +2346,10 @@ local function CreatePerformanceCounter()
     end
 
     performanceGui = Instance.new("ScreenGui")
-    performanceGui.Name = "AnixlyPerformanceCounter"
+    performanceGui.Name = "NyxPerformanceCounter"
     performanceGui.ResetOnSpawn = false
     performanceGui.IgnoreGuiInset = true
-    performanceGui.Parent = PlayerGui
+    local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
     local container = Instance.new("Frame")
     container.Name = "Container"
