@@ -343,6 +343,7 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local IMAGE_ID = "rbxassetid://2061475061"
 
 local function Notify(title, message, theme, duration)
