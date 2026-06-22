@@ -456,62 +456,6 @@ MainSection:AddToggle({
     end
 })
 
--- God Mode (TARUH SINI)
-local godModeEnabled = false
-local godModeConnection = nil
-
-local function StartGodMode()
-    if godModeConnection then return end
-    
-    godModeConnection = RunService.Heartbeat:Connect(function()
-        if godModeEnabled and LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.MaxHealth = math.huge
-                humanoid.Health = math.huge
-                humanoid.BreakJointsOnDeath = false
-            end
-            
-            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.Anchored = false
-                end
-            end
-        end
-    end)
-end
-
-local function StopGodMode()
-    if godModeConnection then
-        godModeConnection:Disconnect()
-        godModeConnection = nil
-    end
-    
-    if LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.MaxHealth = 100
-            humanoid.Health = 100
-            humanoid.BreakJointsOnDeath = true
-        end
-    end
-end
-
-MainSection:AddToggle({
-    Text = "God Mode",
-    Default = false,
-    Callback = function(value)
-        godModeEnabled = value
-        if value then
-            StartGodMode()
-            Notify("GOD MODE", "God Mode: Enabled - You are immortal!", "success", 3)
-        else
-            StopGodMode()
-            Notify("GOD MODE", "God Mode: Disabled", "info", 2)
-        end
-    end
-})
-
 -- Infinity Jump
 local infinityJumpEnabled = false
 local jumpConnection = nil
@@ -1361,10 +1305,174 @@ AutoSummitV2:AddButton({
     end
 })
 
---// TELEPORT AND SPECTATE PLAYER
+--// ESP
 
-local TeleportToPlayerSection = TeleportTab:AddSection("🎯 Teleport to Player")
-local SpectateSection = TeleportTab:AddSection("👁️ Spectate Player")
+local ESPSection = ESPTab:AddSection("👁️ ESP")
+
+local espEnabled = false
+local espObjects = {}
+local espColor = Color3.fromRGB(255, 0, 0)
+local espConnection = nil
+
+local espColors = {
+    Red = Color3.fromRGB(255, 0, 0),
+    Green = Color3.fromRGB(0, 255, 120),
+    Blue = Color3.fromRGB(0, 170, 255),
+    Yellow = Color3.fromRGB(255, 220, 0),
+    White = Color3.fromRGB(255, 255, 255),
+    Purple = Color3.fromRGB(170, 80, 255)
+}
+
+local function CreateESP(plr)
+    if not plr or plr == LocalPlayer then return end
+    local character = plr.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    if not character or not root then return end
+    if espObjects[plr] then return end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "Nyx_ESP_Highlight"
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.FillColor = espColor
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    highlight.Adornee = character
+    highlight.Parent = character
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "Nyx_ESP_Billboard"
+    billboard.Size = UDim2.new(0, 200, 0, 45)
+    billboard.StudsOffset = Vector3.new(0, 2.8, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = root
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = "NameLabel"
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextScaled = true
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextStrokeTransparency = 0.45
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Text = plr.Name
+    textLabel.Parent = billboard
+
+    espObjects[plr] = {highlight = highlight, billboard = billboard, textLabel = textLabel}
+end
+
+local function RemoveESP(plr)
+    local espObj = espObjects[plr]
+    if espObj then
+        if espObj.highlight then espObj.highlight:Destroy() end
+        if espObj.billboard then espObj.billboard:Destroy() end
+        espObjects[plr] = nil
+    end
+end
+
+local function ClearAllESP()
+    for plr in pairs(espObjects) do RemoveESP(plr) end
+    espObjects = {}
+end
+
+local function UpdateAllESP()
+    if not espEnabled then return end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then CreateESP(plr) end
+    end
+end
+
+local function UpdateDistance()
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+
+    for plr, espObj in pairs(espObjects) do
+        local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+        if root and espObj.textLabel then
+            local distance = (myRoot.Position - root.Position).Magnitude
+            espObj.textLabel.Text = plr.Name .. " [" .. string.format("%.1f", distance) .. "m]"
+            if distance < 20 then
+                espObj.textLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
+            elseif distance < 50 then
+                espObj.textLabel.TextColor3 = Color3.fromRGB(255, 180, 0)
+            else
+                espObj.textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+        else
+            RemoveESP(plr)
+        end
+    end
+end
+
+ESPSection:AddToggle({
+    Text = "Enable ESP",
+    Default = false,
+    Callback = function(value)
+        espEnabled = value
+        if value then
+            UpdateAllESP()
+            if espConnection then espConnection:Disconnect() end
+            espConnection = RunService.Heartbeat:Connect(function()
+                if espEnabled then
+                    UpdateAllESP()
+                    UpdateDistance()
+                end
+            end)
+            Notify("ESP", "ESP Enabled", "success", 2)
+        else
+            if espConnection then espConnection:Disconnect() end
+            ClearAllESP()
+            Notify("ESP", "ESP Disabled", "info", 2)
+        end
+    end
+})
+
+ESPSection:AddDropdown({
+    Text = "ESP Color",
+    Options = {"Red", "Green", "Blue", "Yellow", "White", "Purple"},
+    Default = "Red",
+    Callback = function(option)
+        espColor = espColors[option] or Color3.fromRGB(255, 0, 0)
+        for _, espObj in pairs(espObjects) do
+            if espObj.highlight then
+                espObj.highlight.FillColor = espColor
+            end
+        end
+    end
+})
+
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function()
+        task.wait(0.7)
+        if espEnabled then
+            RemoveESP(plr)
+            CreateESP(plr)
+        end
+    end)
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    RemoveESP(plr)
+end)
+
+for _, plr in ipairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then
+        plr.CharacterAdded:Connect(function()
+            task.wait(0.7)
+            if espEnabled then
+                RemoveESP(plr)
+                CreateESP(plr)
+            end
+        end)
+    end
+end
+
+--// TELEPORT AND SPECTATE PLAYER - FIXED
+
+local TeleportToPlayerSection =
+    TeleportTab:AddSection("🎯 Teleport to Player")
+
+local SpectateSection =
+    TeleportTab:AddSection("👁️ Spectate Player")
 
 local selectedTeleportPlayer = nil
 local selectedSpectatePlayer = nil
@@ -1376,11 +1484,12 @@ local spectateDropdown = nil
 
 local viewing = nil
 local isSpectating = false
+
 local originalCameraSubject = nil
+local originalCameraType = nil
 
 local targetCharacterConnection = nil
-local targetRemovingConnection = nil
-local cameraChangedConnection = nil
+local spectateRenderConnection = nil
 
 --// PLAYER LIST
 
@@ -1395,7 +1504,6 @@ local function GetPlayerList()
 
     table.sort(list)
 
-    -- Biar dropdown tidak kosong
     if #list == 0 then
         table.insert(list, "No Players")
     end
@@ -1403,7 +1511,6 @@ local function GetPlayerList()
     return list
 end
 
--- Mendukung beberapa versi dropdown Anixly UI
 local function UpdateDropdownOptions(dropdown, options)
     if not dropdown then
         return false
@@ -1439,7 +1546,10 @@ local function UpdateDropdownOptions(dropdown, options)
         end
     end
 
-    warn("Dropdown tidak mendukung SetOptions, Refresh, atau SetValues")
+    warn(
+        "Dropdown tidak mendukung SetOptions, Refresh, atau SetValues"
+    )
+
     return false
 end
 
@@ -1449,7 +1559,6 @@ local function RefreshPlayerDropdowns()
     UpdateDropdownOptions(playerDropdown, list)
     UpdateDropdownOptions(spectateDropdown, list)
 
-    -- Reset pilihan teleport jika player sudah keluar
     if selectedTeleportPlayer
         and selectedTeleportPlayer ~= "No Players"
         and not Players:FindFirstChild(selectedTeleportPlayer) then
@@ -1457,7 +1566,6 @@ local function RefreshPlayerDropdowns()
         selectedTeleportPlayer = nil
     end
 
-    -- Reset pilihan spectate jika player sudah keluar
     if selectedSpectatePlayer
         and selectedSpectatePlayer ~= "No Players"
         and not Players:FindFirstChild(selectedSpectatePlayer) then
@@ -1480,7 +1588,11 @@ playerDropdown = TeleportToPlayerSection:AddDropdown({
         end
 
         selectedTeleportPlayer = option
-        print("Selected teleport player:", option)
+
+        print(
+            "Selected teleport player:",
+            tostring(option)
+        )
     end
 })
 
@@ -1496,7 +1608,7 @@ TeleportToPlayerSection:AddButton({
 
             Notify(
                 "TELEPORT",
-                "Please select a player first.",
+                "Pilih player terlebih dahulu.",
                 "warning",
                 2
             )
@@ -1504,7 +1616,8 @@ TeleportToPlayerSection:AddButton({
             return
         end
 
-        local target = Players:FindFirstChild(selectedTeleportPlayer)
+        local target =
+            Players:FindFirstChild(selectedTeleportPlayer)
 
         if not target then
             selectedTeleportPlayer = nil
@@ -1528,11 +1641,15 @@ TeleportToPlayerSection:AddButton({
 
         local myRoot =
             myCharacter
-            and myCharacter:FindFirstChild("HumanoidRootPart")
+            and myCharacter:FindFirstChild(
+                "HumanoidRootPart"
+            )
 
         local targetRoot =
             targetCharacter
-            and targetCharacter:FindFirstChild("HumanoidRootPart")
+            and targetCharacter:FindFirstChild(
+                "HumanoidRootPart"
+            )
 
         if not myRoot or not targetRoot then
             Notify(
@@ -1560,23 +1677,6 @@ TeleportToPlayerSection:AddButton({
 
 --// SPECTATE FUNCTIONS
 
-local function DisconnectSpectateConnections()
-    if targetCharacterConnection then
-        targetCharacterConnection:Disconnect()
-        targetCharacterConnection = nil
-    end
-
-    if targetRemovingConnection then
-        targetRemovingConnection:Disconnect()
-        targetRemovingConnection = nil
-    end
-
-    if cameraChangedConnection then
-        cameraChangedConnection:Disconnect()
-        cameraChangedConnection = nil
-    end
-end
-
 local function GetCharacterHumanoid(plr)
     local character = plr and plr.Character
 
@@ -1584,7 +1684,21 @@ local function GetCharacterHumanoid(plr)
         return nil
     end
 
-    return character:FindFirstChildWhichIsA("Humanoid")
+    return character:FindFirstChildWhichIsA(
+        "Humanoid"
+    )
+end
+
+local function DisconnectSpectateConnections()
+    if targetCharacterConnection then
+        targetCharacterConnection:Disconnect()
+        targetCharacterConnection = nil
+    end
+
+    if spectateRenderConnection then
+        spectateRenderConnection:Disconnect()
+        spectateRenderConnection = nil
+    end
 end
 
 local function RestoreLocalCamera()
@@ -1597,23 +1711,29 @@ local function RestoreLocalCamera()
     local localHumanoid =
         GetCharacterHumanoid(LocalPlayer)
 
-    if originalCameraSubject
+    camera.CameraType = Enum.CameraType.Custom
+
+    if localHumanoid then
+        camera.CameraSubject = localHumanoid
+
+    elseif originalCameraSubject
         and originalCameraSubject.Parent then
 
-        camera.CameraSubject = originalCameraSubject
-
-    elseif localHumanoid then
-        camera.CameraSubject = localHumanoid
+        camera.CameraSubject =
+            originalCameraSubject
     end
 end
 
 local function StopSpectate(showNotification)
     DisconnectSpectateConnections()
 
+    isSpectating = false
+    viewing = nil
+
     RestoreLocalCamera()
 
-    viewing = nil
-    isSpectating = false
+    originalCameraSubject = nil
+    originalCameraType = nil
 
     if showNotification ~= false then
         Notify(
@@ -1625,29 +1745,34 @@ local function StopSpectate(showNotification)
     end
 end
 
-local function SetSpectateTarget(target)
-    if not isSpectating or viewing ~= target then
+local function ApplySpectateCamera()
+    if not isSpectating or not viewing then
         return false
     end
 
     local camera = workspace.CurrentCamera
-    local targetHumanoid = GetCharacterHumanoid(target)
+
+    local targetHumanoid =
+        GetCharacterHumanoid(viewing)
 
     if not camera or not targetHumanoid then
         return false
     end
 
+    camera.CameraType = Enum.CameraType.Custom
     camera.CameraSubject = targetHumanoid
+
     return true
 end
 
 local function StartSpectate(playerName)
-    local target = Players:FindFirstChild(playerName)
+    local target =
+        Players:FindFirstChild(playerName)
 
     if not target or target == LocalPlayer then
         Notify(
             "SPECTATE",
-            "Player not found!",
+            "Player tidak ditemukan!",
             "error",
             2
         )
@@ -1655,9 +1780,18 @@ local function StartSpectate(playerName)
         return false
     end
 
-    local targetHumanoid = GetCharacterHumanoid(target)
+    local targetCharacter = target.Character
 
-    if not targetHumanoid then
+    local targetHumanoid =
+        GetCharacterHumanoid(target)
+
+    local targetRoot =
+        targetCharacter
+        and targetCharacter:FindFirstChild(
+            "HumanoidRootPart"
+        )
+
+    if not targetHumanoid or not targetRoot then
         Notify(
             "SPECTATE",
             "Character target belum siap!",
@@ -1685,47 +1819,102 @@ local function StartSpectate(playerName)
         return false
     end
 
-    originalCameraSubject = camera.CameraSubject
+    originalCameraSubject =
+        camera.CameraSubject
+
+    originalCameraType =
+        camera.CameraType
+
     viewing = target
     isSpectating = true
 
-    camera.CameraSubject = targetHumanoid
+    camera.CameraType =
+        Enum.CameraType.Custom
 
-    -- Saat target respawn, kamera otomatis pindah ke karakter barunya
-    targetCharacterConnection = target.CharacterAdded:Connect(function(character)
-        local humanoid =
-            character:WaitForChild("Humanoid", 10)
+    camera.CameraSubject =
+        targetHumanoid
 
-        if humanoid
-            and isSpectating
-            and viewing == target then
+    -- Kalau target respawn, ikuti karakter baru
+    targetCharacterConnection =
+        target.CharacterAdded:Connect(
+            function(character)
 
-            task.wait(0.2)
+                local humanoid =
+                    character:WaitForChild(
+                        "Humanoid",
+                        10
+                    )
 
-            local currentCamera = workspace.CurrentCamera
+                local root =
+                    character:WaitForChild(
+                        "HumanoidRootPart",
+                        10
+                    )
 
-            if currentCamera then
-                currentCamera.CameraSubject = humanoid
+                if not humanoid or not root then
+                    return
+                end
+
+                task.wait(0.3)
+
+                if isSpectating
+                    and viewing == target then
+
+                    local currentCamera =
+                        workspace.CurrentCamera
+
+                    if currentCamera then
+                        currentCamera.CameraType =
+                            Enum.CameraType.Custom
+
+                        currentCamera.CameraSubject =
+                            humanoid
+                    end
+                end
             end
-        end
-    end)
+        )
 
-    -- Pastikan kamera tetap mengikuti target
-    cameraChangedConnection =
-        camera:GetPropertyChangedSignal("CameraSubject"):Connect(function()
+    -- Menjaga kamera tetap mengikuti target
+    spectateRenderConnection =
+        RunService.RenderStepped:Connect(
+            function()
 
-            if not isSpectating or viewing ~= target then
-                return
+                if not isSpectating
+                    or viewing ~= target then
+
+                    return
+                end
+
+                if target.Parent ~= Players then
+                    StopSpectate(false)
+                    return
+                end
+
+                local currentCamera =
+                    workspace.CurrentCamera
+
+                local currentHumanoid =
+                    GetCharacterHumanoid(target)
+
+                if currentCamera
+                    and currentHumanoid then
+
+                    if currentCamera.CameraType
+                        ~= Enum.CameraType.Custom then
+
+                        currentCamera.CameraType =
+                            Enum.CameraType.Custom
+                    end
+
+                    if currentCamera.CameraSubject
+                        ~= currentHumanoid then
+
+                        currentCamera.CameraSubject =
+                            currentHumanoid
+                    end
+                end
             end
-
-            local humanoid = GetCharacterHumanoid(target)
-
-            if humanoid
-                and camera.CameraSubject ~= humanoid then
-
-                camera.CameraSubject = humanoid
-            end
-        end)
+        )
 
     Notify(
         "SPECTATE",
@@ -1751,7 +1940,11 @@ spectateDropdown = SpectateSection:AddDropdown({
         end
 
         selectedSpectatePlayer = option
-        print("Selected spectate player:", option)
+
+        print(
+            "Selected spectate player:",
+            tostring(option)
+        )
     end
 })
 
@@ -1767,7 +1960,7 @@ SpectateSection:AddButton({
 
             Notify(
                 "SPECTATE",
-                "Please select a player first.",
+                "Pilih player terlebih dahulu.",
                 "warning",
                 2
             )
@@ -1775,7 +1968,9 @@ SpectateSection:AddButton({
             return
         end
 
-        StartSpectate(selectedSpectatePlayer)
+        StartSpectate(
+            selectedSpectatePlayer
+        )
     end
 })
 
@@ -1791,6 +1986,7 @@ SpectateSection:AddButton({
 
 Players.PlayerAdded:Connect(function(plr)
     task.wait(0.3)
+
     RefreshPlayerDropdowns()
 
     Notify(
@@ -1826,17 +2022,76 @@ Players.PlayerRemoving:Connect(function(plr)
     end)
 end)
 
--- Kalau karakter sendiri respawn, hentikan spectate
+-- Kalau karakter sendiri respawn
 LocalPlayer.CharacterAdded:Connect(function()
     if isSpectating then
         StopSpectate(false)
+    else
+        task.wait(0.3)
+        RestoreLocalCamera()
     end
 end)
 
--- Refresh pertama kali setelah UI selesai dibuat
+-- Refresh awal
 task.defer(function()
     RefreshPlayerDropdowns()
 end)
+
+-- God Mode
+local godModeEnabled = false
+local godModeConnection = nil
+
+local function StartGodMode()
+    if godModeConnection then return end
+    
+    godModeConnection = RunService.Heartbeat:Connect(function()
+        if godModeEnabled and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.MaxHealth = math.huge
+                humanoid.Health = math.huge
+                humanoid.BreakJointsOnDeath = false
+            end
+            
+            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = false
+                end
+            end
+        end
+    end)
+end
+
+local function StopGodMode()
+    if godModeConnection then
+        godModeConnection:Disconnect()
+        godModeConnection = nil
+    end
+    
+    if LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.MaxHealth = 100
+            humanoid.Health = 100
+            humanoid.BreakJointsOnDeath = true
+        end
+    end
+end
+
+InvisibleSection:AddToggle({
+    Text = "God Mode",
+    Default = false,
+    Callback = function(value)
+        godModeEnabled = value
+        if value then
+            StartGodMode()
+            Notify("GOD MODE", "God Mode: Enabled - You are immortal!", "success", 3)
+        else
+            StopGodMode()
+            Notify("GOD MODE", "God Mode: Disabled", "info", 2)
+        end
+    end
+})
 
 --// UTILITY
 
@@ -1919,7 +2174,7 @@ UtilitySection:AddToggle({
 })
 
 -- Hide Name Tag
-local HideNameSection = MainTab:AddSection("👀 Hide Name Tag")
+local HideNameSection = UtilityTab:AddSection("👀 Hide Name Tag")
 
 local hideNameEnabled = false
 local hideNameLoop = nil
