@@ -536,6 +536,65 @@ MainSection:AddSlider({
     end
 })
 
+-- GOD MODE
+local GodModeSection = MainTab:AddSection("🩸 Kekebalan Tubuh")
+
+-- God Mode
+local godModeEnabled = false
+local godModeConnection = nil
+
+local function StartGodMode()
+    if godModeConnection then return end
+    
+    godModeConnection = RunService.Heartbeat:Connect(function()
+        if godModeEnabled and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.MaxHealth = math.huge
+                humanoid.Health = math.huge
+                humanoid.BreakJointsOnDeath = false
+            end
+            
+            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = false
+                end
+            end
+        end
+    end)
+end
+
+local function StopGodMode()
+    if godModeConnection then
+        godModeConnection:Disconnect()
+        godModeConnection = nil
+    end
+    
+    if LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.MaxHealth = 100
+            humanoid.Health = 100
+            humanoid.BreakJointsOnDeath = true
+        end
+    end
+end
+
+GodModeSection:AddToggle({
+    Text = "God Mode",
+    Default = false,
+    Callback = function(value)
+        godModeEnabled = value
+        if value then
+            StartGodMode()
+            Notify("GOD MODE", "God Mode: Enabled - You are immortal!", "success", 3)
+        else
+            StopGodMode()
+            Notify("GOD MODE", "God Mode: Disabled", "info", 2)
+        end
+    end
+})
+
 -- INVISIBLE MODE
 local InvisibleSection = MainTab:AddSection("👻 Invisible Mode")
 
@@ -2036,62 +2095,6 @@ end)
 task.defer(function()
     RefreshPlayerDropdowns()
 end)
-
--- God Mode
-local godModeEnabled = false
-local godModeConnection = nil
-
-local function StartGodMode()
-    if godModeConnection then return end
-    
-    godModeConnection = RunService.Heartbeat:Connect(function()
-        if godModeEnabled and LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.MaxHealth = math.huge
-                humanoid.Health = math.huge
-                humanoid.BreakJointsOnDeath = false
-            end
-            
-            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.Anchored = false
-                end
-            end
-        end
-    end)
-end
-
-local function StopGodMode()
-    if godModeConnection then
-        godModeConnection:Disconnect()
-        godModeConnection = nil
-    end
-    
-    if LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.MaxHealth = 100
-            humanoid.Health = 100
-            humanoid.BreakJointsOnDeath = true
-        end
-    end
-end
-
-InvisibleSection:AddToggle({
-    Text = "God Mode",
-    Default = false,
-    Callback = function(value)
-        godModeEnabled = value
-        if value then
-            StartGodMode()
-            Notify("GOD MODE", "God Mode: Enabled - You are immortal!", "success", 3)
-        else
-            StopGodMode()
-            Notify("GOD MODE", "God Mode: Disabled", "info", 2)
-        end
-    end
-})
 
 --// UTILITY
 
