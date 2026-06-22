@@ -2,17 +2,6 @@ repeat task.wait() until game:IsLoaded()
 
 local player = game.Players.LocalPlayer
 
---// CEK GAME ID
-local placeId = game.PlaceId
-local universeId = game.GameId
-
-print("Nyx Hub: Loading script for Place ID: " .. placeId)
-print("Nyx Hub: Universe ID: " .. universeId)
-
-if games then
-    print("Nyx Hub: Loading script for ID " .. (games[universeId] and "Universe" or "Place"))
-end
-
 pcall(function()
     local mt = getrawmetatable(game)
     if mt then
@@ -342,8 +331,6 @@ local HttpService = game:GetService("HttpService")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local IMAGE_ID = "rbxassetid://2061475061"
 
 local function Notify(title, message, theme, duration)
