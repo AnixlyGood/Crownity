@@ -330,7 +330,6 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
-local IMAGE_ID = "rbxassetid://2061475061"
 
 local function Notify(title, message, theme, duration)
     AnixlyUI:ShowNotification({
@@ -390,10 +389,7 @@ local executorName = GetExecutor()
 local Window = AnixlyUI:CreateWindow({
     Title = "Nyx Hub",
     Subtitle = "Version 1.0.0 | " .. executorName, 
-    Theme = "ANIXLY",
-
-    MiniIcon = IMAGE_ID,
-    Logo = IMAGE_ID,
+    Theme = "Neon Pulse",
 
     Size = {
         Width = 540,
@@ -408,7 +404,7 @@ local UtilityTab = Window:CreateTab("Utility")
 
 --// MAIN
 
-local MainSection = MainTab:AddSection("Main", "4483345998")
+local MainSection = MainTab:AddSection("Main") 
 
 -- Noclip
 local noclipEnabled = false
@@ -593,7 +589,7 @@ MainSection:AddSlider({
 })
 
 -- INVISIBLE MODE
-local InvisibleSection = MainTab:AddSection("Invisible Mode", "4483362458")
+local InvisibleSection = MainTab:AddSection("Invisible Mode") 
 
 local invisibleEnabled = false
 local invisibleConnection = nil
@@ -654,7 +650,7 @@ InvisibleSection:AddToggle({
 })
 
 -- FLY SECTION
-local FlySection = MainTab:AddSection("Fly", "4483381572")
+local FlySection = MainTab:AddSection("Fly")
 
 local flyActive = false
 local flySpeed = 50
@@ -974,7 +970,7 @@ LocalPlayer.CharacterAdded:Connect(function()
 end)
 
 ----V1 AUTO SUMMIT (CP1-CP41)
-local AutoSummitV1 = MainTab:AddSection("Auto Summit V1", "4483345998")
+local AutoSummitV1 = MainTab:AddSection("Auto Summit V1")
 
 local autoSummitEnabled = false
 local currentCp = 1
@@ -1164,7 +1160,7 @@ AutoSummitV1:AddButton({
 })
 
 ---V2 AUTO SUMMIT (Checkpoint 1 - Checkpoint 41)
-local AutoSummitV2 = MainTab:AddSection("Auto Summit V2", "4483345998")
+local AutoSummitV2 = MainTab:AddSection("Auto Summit V2")
 
 local autoSummitEnabled2 = false
 local currentCp2 = 1
@@ -1363,7 +1359,7 @@ AutoSummitV2:AddButton({
 
 --// ESP
 
-local ESPSection = ESPTab:AddSection("ESP", "4483362458")
+local ESPSection = ESPTab:AddSection("ESP")
 
 local espEnabled = false
 local espObjects = {}
@@ -1525,10 +1521,10 @@ end
 --// TELEPORT AND SPECTATE PLAYER - FIXED
 
 local TeleportToPlayerSection =
-    TeleportTab:AddSection("Teleport to Player", "4483381572")
+    TeleportTab:AddSection("Teleport to Player")
 
 local SpectateSection =
-    TeleportTab:AddSection("Spectate Player", "4483362458")
+    TeleportTab:AddSection("Spectate Player")
 
 local selectedTeleportPlayer = nil
 local selectedSpectatePlayer = nil
@@ -2095,7 +2091,7 @@ end)
 
 --// UTILITY
 
-local UtilitySection = UtilityTab:AddSection("Anti Staff", "4483345998")
+local UtilitySection = UtilityTab:AddSection("Anti Staff") 
 
 local staffKeywords = {
     "admin", "mod", "moderator", "owner", "creator", "dev", "developer",
@@ -2174,7 +2170,7 @@ UtilitySection:AddToggle({
 })
 
 -- Hide Name Tag
-local HideNameSection = UtilityTab:AddSection("Hide Name Tag", "4483362458")
+local HideNameSection = UtilityTab:AddSection("Hide Name Tag")
 
 local hideNameEnabled = false
 local hideNameLoop = nil
@@ -2285,7 +2281,7 @@ HideNameSection:AddToggle({
 })
 
 -- Anti Lag / Boost FPS
-local AntiLagSection = UtilityTab:AddSection("Boost FPS & Visual", "4483381572")
+local AntiLagSection = UtilityTab:AddSection("Boost FPS & Visual")
 
 local antiLagEnabled = false
 local antiLagConnection = nil
@@ -2455,7 +2451,7 @@ AntiLagSection:AddToggle({
     end
 })
 
-local BypassSection = UtilityTab:AddSection("Bypass Voice Chat", "4483345998")
+local BypassSection = UtilityTab:AddSection("Bypass Voice Chat")
 
 local chatGui = nil
 local voiceBypassEnabled = false
