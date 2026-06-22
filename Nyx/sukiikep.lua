@@ -512,50 +512,6 @@ MainSection:AddToggle({
     end
 })
 
--- No Fall Damage
-local noFallDamageEnabled = false
-local noFallConnection = nil
-
-local function StartNoFallDamage()
-    if noFallConnection then return end
-    
-    noFallConnection = RunService.Heartbeat:Connect(function()
-        if noFallDamageEnabled and LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                if humanoid.FloorMaterial == Enum.Material.Air then
-                    local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if rootPart and rootPart.Velocity.Y < -30 then
-                        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, -20, rootPart.Velocity.Z)
-                    end
-                end
-            end
-        end
-    end)
-end
-
-local function StopNoFallDamage()
-    if noFallConnection then
-        noFallConnection:Disconnect()
-        noFallConnection = nil
-    end
-end
-
-MainSection:AddToggle({
-    Text = "No Fall Damage",
-    Default = false,
-    Callback = function(value)
-        noFallDamageEnabled = value
-        if value then
-            StartNoFallDamage()
-            Notify("NO FALL", "No Fall Damage: Enabled", "success", 2)
-        else
-            StopNoFallDamage()
-            Notify("NO FALL", "No Fall Damage: Disabled", "info", 2)
-        end
-    end
-})
-
 -- Infinity Jump
 local infinityJumpEnabled = false
 local jumpConnection = nil
@@ -638,6 +594,50 @@ MainSection:AddSlider({
 
 -- INVISIBLE MODE
 local InvisibleSection = MainTab:AddSection("👻 Invisible Mode")
+
+-- No Fall Damage
+local noFallDamageEnabled = false
+local noFallConnection = nil
+
+local function StartNoFallDamage()
+    if noFallConnection then return end
+    
+    noFallConnection = RunService.Heartbeat:Connect(function()
+        if noFallDamageEnabled and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                if humanoid.FloorMaterial == Enum.Material.Air then
+                    local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if rootPart and rootPart.Velocity.Y < -30 then
+                        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, -20, rootPart.Velocity.Z)
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function StopNoFallDamage()
+    if noFallConnection then
+        noFallConnection:Disconnect()
+        noFallConnection = nil
+    end
+end
+
+InvisibleSection:AddToggle({
+    Text = "No Fall Damage",
+    Default = false,
+    Callback = function(value)
+        noFallDamageEnabled = value
+        if value then
+            StartNoFallDamage()
+            Notify("NO FALL", "No Fall Damage: Enabled", "success", 2)
+        else
+            StopNoFallDamage()
+            Notify("NO FALL", "No Fall Damage: Disabled", "info", 2)
+        end
+    end
+})
 
 local invisibleEnabled = false
 local invisibleConnection = nil
