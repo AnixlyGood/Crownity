@@ -536,6 +536,7 @@ MainSection:AddToggle({
     end
 })
 
+-- God Mode
 local godModeEnabled = false
 local godModeConnection = nil
 
@@ -602,7 +603,6 @@ local function StartNoFallDamage()
         if noFallDamageEnabled and LocalPlayer.Character then
             local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if humanoid then
-                -- Cegah fall damage dengan reset velocity kalo jatuh
                 if humanoid.FloorMaterial == Enum.Material.Air then
                     local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     if rootPart and rootPart.Velocity.Y < -30 then
@@ -636,6 +636,7 @@ MainSection:AddToggle({
     end
 })
 
+-- Infinity Jump
 local infinityJumpEnabled = false
 local jumpConnection = nil
 
@@ -715,11 +716,11 @@ MainSection:AddSlider({
     end
 })
 
-local MainSection = MainTab:AddSection("👻 Invisible Mode")
+-- INVISIBLE MODE
+local InvisibleSection = MainTab:AddSection("👻 Invisible Mode")
 
 local invisibleEnabled = false
 local invisibleConnection = nil
-local originalTransparency = {}
 
 local function StartInvisible()
     if invisibleConnection then return end
@@ -761,7 +762,7 @@ local function StopInvisible()
     end
 end
 
-UtilitySection:AddToggle({
+InvisibleSection:AddToggle({
     Text = "Invisible",
     Default = false,
     Callback = function(value)
@@ -776,6 +777,7 @@ UtilitySection:AddToggle({
     end
 })
 
+-- FLY SECTION
 local FlySection = MainTab:AddSection("🛸 Fly")
 
 local flyActive = false
@@ -979,7 +981,6 @@ local function StartFly()
             return
         end
 
-        -- Arah kamera penuh, termasuk atas dan bawah
         local cameraForward = camera.CFrame.LookVector
         local cameraRight = camera.CFrame.RightVector
 
@@ -991,7 +992,6 @@ local function StartFly()
             or flyKeys.S
             or flyKeys.D
 
-        -- Keyboard mengikuti arah kamera
         if flyKeys.W then
             moveVector += cameraForward
         end
@@ -1008,7 +1008,6 @@ local function StartFly()
             moveVector += cameraRight
         end
 
-        -- Joystick mobile / controller
         if not keyboardMoving then
             local moveDirection = humanoid.MoveDirection
 
@@ -1045,7 +1044,6 @@ local function StartFly()
             end
         end
 
-        -- Naik dan turun manual
         if flyKeys.Up then
             moveVector += Vector3.new(0, 1, 0)
         end
@@ -1060,7 +1058,6 @@ local function StartFly()
             flyVelocity.Velocity = Vector3.zero
         end
 
-        -- Badan mengikuti arah kamera
         flyGyro.CFrame = CFrame.lookAt(
             root.Position,
             root.Position + cameraForward,
@@ -1094,14 +1091,13 @@ FlySection:AddSlider({
     end
 })
 
--- Matikan fly saat karakter respawn
 LocalPlayer.CharacterAdded:Connect(function()
     if flyActive then
         StopFly(true)
     end
 end)
 
---// TELEPORT AND SPECTATE //---
+--// TELEPORT AND SPECTATE
 
 local TeleportToPlayerSection = TeleportTab:AddSection("🎯 Teleport to Player")
 local SpectateSection = TeleportTab:AddSection("👁️ Spectate Player")
@@ -1112,8 +1108,6 @@ local selectedSpectatePlayer = nil
 local playerDropdown = nil
 local spectateDropdown = nil
 
---// SPECTATE VARIABLES
-
 local viewing = nil
 local isSpectating = false
 local originalCameraSubject = nil
@@ -1121,8 +1115,6 @@ local originalCameraSubject = nil
 local targetCharacterConnection = nil
 local targetRemovingConnection = nil
 local cameraChangedConnection = nil
-
---// PLAYER LIST
 
 local function GetPlayerList()
     local list = {}
@@ -1135,7 +1127,6 @@ local function GetPlayerList()
 
     table.sort(list)
 
-    -- Biar dropdown tidak kosong
     if #list == 0 then
         table.insert(list, "No Players")
     end
@@ -1188,7 +1179,6 @@ local function RefreshPlayerDropdowns()
     UpdateDropdownOptions(playerDropdown, list)
     UpdateDropdownOptions(spectateDropdown, list)
 
-    -- Reset pilihan teleport jika player sudah keluar
     if selectedTeleportPlayer
         and selectedTeleportPlayer ~= "No Players"
         and not Players:FindFirstChild(selectedTeleportPlayer) then
@@ -1196,7 +1186,6 @@ local function RefreshPlayerDropdowns()
         selectedTeleportPlayer = nil
     end
 
-    -- Reset pilihan spectate jika player sudah keluar
     if selectedSpectatePlayer
         and selectedSpectatePlayer ~= "No Players"
         and not Players:FindFirstChild(selectedSpectatePlayer) then
@@ -1220,8 +1209,6 @@ playerDropdown = TeleportToPlayerSection:AddDropdown({
         print("Selected teleport player:", option)
     end
 })
-
---// TELEPORT BUTTON
 
 TeleportToPlayerSection:AddButton({
     Text = "Teleport to Player",
@@ -1426,7 +1413,6 @@ local function StartSpectate(playerName)
 
     camera.CameraSubject = targetHumanoid
 
-    -- Saat target respawn, kamera otomatis pindah ke karakter barunya
     targetCharacterConnection = target.CharacterAdded:Connect(function(character)
         local humanoid =
             character:WaitForChild("Humanoid", 10)
@@ -1445,7 +1431,6 @@ local function StartSpectate(playerName)
         end
     end)
 
-    -- Pastikan kamera tetap mengikuti target
     cameraChangedConnection =
         camera:GetPropertyChangedSignal("CameraSubject"):Connect(function()
 
@@ -1487,8 +1472,6 @@ spectateDropdown = SpectateSection:AddDropdown({
         print("Selected spectate player:", option)
     end
 })
-
---// SPECTATE BUTTONS
 
 SpectateSection:AddButton({
     Text = "Start Spectate",
@@ -1563,13 +1546,12 @@ LocalPlayer.CharacterAdded:Connect(function()
     end
 end)
 
--- Refresh pertama kali setelah UI selesai dibuat
 task.defer(function()
     RefreshPlayerDropdowns()
 end)
 
-----V1
-local AutoSummitSection = MainTab:AddSection("🏔️ Auto Summit V1")
+----V1 AUTO SUMMIT (CP1-CP41)
+local AutoSummitV1 = MainTab:AddSection("🏔️ Auto Summit V1")
 
 local autoSummitEnabled = false
 local currentCp = 1
@@ -1590,7 +1572,6 @@ local function TeleportToCP(cpNumber)
     
     task.wait(0.2)
     
-    -- Cari Checkpoints di workspace
     local checkpointParent = workspace:FindFirstChild("Checkpoints")
     if not checkpointParent then
         checkpointParent = workspace:FindFirstChild("MountKicauMania") or workspace:FindFirstChild("Mount")
@@ -1611,17 +1592,14 @@ local function TeleportToCP(cpNumber)
         return false
     end
     
-    -- Coba dengan format "CP1", "CP2", dst
     local cpName = "CP" .. cpNumber
     local cp = checkpointParent:FindFirstChild(cpName)
     
-    -- Jika tidak ditemukan, coba format "Checkpoint1", "Checkpoint2", dst
     if not cp then
         cpName = "Checkpoint" .. cpNumber
         cp = checkpointParent:FindFirstChild(cpName)
     end
     
-    -- Jika masih tidak ditemukan, cari case insensitive
     if not cp then
         for _, child in ipairs(checkpointParent:GetChildren()) do
             if child.Name:lower() == "cp" .. cpNumber or child.Name:lower() == "checkpoint" .. cpNumber then
@@ -1637,7 +1615,6 @@ local function TeleportToCP(cpNumber)
         return false
     end
     
-    -- Teleport langsung
     if cp:IsA("Model") then
         character:PivotTo(cp:GetPivot() + Vector3.new(0, 3, 0))
     elseif cp:IsA("BasePart") then
@@ -1713,13 +1690,12 @@ local function StopAutoSummit()
     loopCount = 0
 end
 
--- Buat list CP1-CP41
 local cpOptions = {}
 for i = 1, 41 do
     table.insert(cpOptions, "CP" .. i)
 end
 
-AutoSummitSection:AddDropdown({
+AutoSummitV1:AddDropdown({
     Text = "Target CP",
     Options = cpOptions,
     Default = "CP41",
@@ -1729,7 +1705,7 @@ AutoSummitSection:AddDropdown({
     end
 })
 
-AutoSummitSection:AddToggle({
+AutoSummitV1:AddToggle({
     Text = "Auto Summit",
     Default = false,
     Callback = function(value)
@@ -1745,7 +1721,7 @@ AutoSummitSection:AddToggle({
     end
 })
 
-AutoSummitSection:AddSlider({
+AutoSummitV1:AddSlider({
     Text = "⏱️ Delay between CP (seconds)",
     Min = 1,
     Max = 5,
@@ -1756,7 +1732,7 @@ AutoSummitSection:AddSlider({
     end
 })
 
-AutoSummitSection:AddButton({
+AutoSummitV1:AddButton({
     Text = "📍 Teleport to Selected CP",
     Callback = function()
         local targetNum = tonumber(selectedTargetCP:match("%d+")) or 1
@@ -1764,29 +1740,28 @@ AutoSummitSection:AddButton({
     end
 })
 
----V2
-local AutoSummitSection = MainTab:AddSection("🏔  Auto Summit V2")
+---V2 AUTO SUMMIT (Checkpoint 1 - Checkpoint 41)
+local AutoSummitV2 = MainTab:AddSection("🏔️ Auto Summit V2")
 
-local autoSummitEnabled = false
-local currentCp = 1
-local cpDelay = 1
-local loopCount = 0
-local selectedTargetCP = "Checkpoint 41"
-local isTeleporting = false
+local autoSummitEnabled2 = false
+local currentCp2 = 1
+local cpDelay2 = 1
+local loopCount2 = 0
+local selectedTargetCP2 = "Checkpoint 41"
+local isTeleporting2 = false
 
-local function TeleportToCP(cpNumber)
-    if isTeleporting then return false end
-    isTeleporting = true
+local function TeleportToCP2(cpNumber)
+    if isTeleporting2 then return false end
+    isTeleporting2 = true
     
     local character = LocalPlayer.Character
     if not character then 
-        isTeleporting = false
+        isTeleporting2 = false
         return false 
     end
     
     task.wait(0.2)
     
-    -- Cari Checkpoint di workspace
     local checkpointParent = workspace:FindFirstChild("Checkpoint")
     if not checkpointParent then
         checkpointParent = workspace:FindFirstChild("Checkpoints")
@@ -1803,27 +1778,23 @@ local function TeleportToCP(cpNumber)
     
     if not checkpointParent then
         Notify("AUTO SUMMIT", "Checkpoint folder not found!", "error", 2)
-        isTeleporting = false
+        isTeleporting2 = false
         return false
     end
     
-    -- Coba dengan format "Checkpoint 1", "Checkpoint 2", dst
     local cpName = "Checkpoint " .. cpNumber
     local cp = checkpointParent:FindFirstChild(cpName)
     
-    -- Jika tidak ditemukan, coba format "Checkpoint1", "Checkpoint2", dst (tanpa spasi)
     if not cp then
         cpName = "Checkpoint" .. cpNumber
         cp = checkpointParent:FindFirstChild(cpName)
     end
     
-    -- Jika masih tidak ditemukan, coba format "CP1", "CP2", dst
     if not cp then
         cpName = "CP" .. cpNumber
         cp = checkpointParent:FindFirstChild(cpName)
     end
     
-    -- Jika masih tidak ditemukan, cari case insensitive
     if not cp then
         for _, child in ipairs(checkpointParent:GetChildren()) do
             local childName = child.Name:lower()
@@ -1838,11 +1809,10 @@ local function TeleportToCP(cpNumber)
     
     if not cp then
         Notify("AUTO SUMMIT", "Checkpoint " .. cpNumber .. " not found!", "error", 2)
-        isTeleporting = false
+        isTeleporting2 = false
         return false
     end
     
-    -- Teleport langsung
     if cp:IsA("Model") then
         character:PivotTo(cp:GetPivot() + Vector3.new(0, 3, 0))
     elseif cp:IsA("BasePart") then
@@ -1853,121 +1823,122 @@ local function TeleportToCP(cpNumber)
             character:PivotTo(part.CFrame + Vector3.new(0, 3, 0))
         else
             Notify("AUTO SUMMIT", "Target is not a Model or BasePart", "error", 2)
-            isTeleporting = false
+            isTeleporting2 = false
             return false
         end
     end
     
     task.wait(0.2)
-    isTeleporting = false
+    isTeleporting2 = false
     return true
 end
 
-local function TeleportToSpecificCP(cpNumber)
-    if isTeleporting then 
+local function TeleportToSpecificCP2(cpNumber)
+    if isTeleporting2 then 
         Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
         return false 
     end
     
-    local success = TeleportToCP(cpNumber)
+    local success = TeleportToCP2(cpNumber)
     if success then
         Notify("AUTO SUMMIT", "Teleported to Checkpoint " .. cpNumber, "success", 2)
     end
     return success
 end
 
-local function StartAutoSummit()
-    if isTeleporting then 
+local function StartAutoSummit2()
+    if isTeleporting2 then 
         Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
         return
     end
     
-    currentCp = 1
-    loopCount = loopCount + 1
+    currentCp2 = 1
+    loopCount2 = loopCount2 + 1
     
     local targetNum = 41
-    if selectedTargetCP and selectedTargetCP ~= "All Checkpoint" then
-        targetNum = tonumber(selectedTargetCP:match("%d+")) or 41
+    if selectedTargetCP2 and selectedTargetCP2 ~= "All Checkpoint" then
+        targetNum = tonumber(selectedTargetCP2:match("%d+")) or 41
     end
     
-    Notify("AUTO SUMMIT", "Loop #" .. loopCount .. " - Starting from Checkpoint 1 to " .. selectedTargetCP, "info", 2)
+    Notify("AUTO SUMMIT", "Loop #" .. loopCount2 .. " - Starting from Checkpoint 1 to " .. selectedTargetCP2, "info", 2)
     
     task.spawn(function()
-        while autoSummitEnabled and currentCp <= targetNum do
-            if isTeleporting then
+        while autoSummitEnabled2 and currentCp2 <= targetNum do
+            if isTeleporting2 then
                 task.wait(0.5)
             else
-                Notify("AUTO SUMMIT", "Teleporting to Checkpoint " .. currentCp, "info", 1)
-                TeleportToCP(currentCp)
-                currentCp = currentCp + 1
-                task.wait(cpDelay)
+                Notify("AUTO SUMMIT", "Teleporting to Checkpoint " .. currentCp2, "info", 1)
+                TeleportToCP2(currentCp2)
+                currentCp2 = currentCp2 + 1
+                task.wait(cpDelay2)
             end
         end
         
-        if currentCp > targetNum and autoSummitEnabled then
-            Notify("AUTO SUMMIT", "Reached " .. selectedTargetCP .. "! (Loop #" .. loopCount .. ")", "success", 2)
+        if currentCp2 > targetNum and autoSummitEnabled2 then
+            Notify("AUTO SUMMIT", "Reached " .. selectedTargetCP2 .. "! (Loop #" .. loopCount2 .. ")", "success", 2)
             Notify("AUTO SUMMIT", "Stopping...", "info", 2)
-            autoSummitEnabled = false
+            autoSummitEnabled2 = false
         end
     end)
 end
 
-local function StopAutoSummit()
-    autoSummitEnabled = false
-    currentCp = 1
-    loopCount = 0
+local function StopAutoSummit2()
+    autoSummitEnabled2 = false
+    currentCp2 = 1
+    loopCount2 = 0
 end
 
--- Buat list Checkpoint 1 - Checkpoint 41
-local cpOptions = {}
+local cpOptions2 = {}
 for i = 1, 41 do
-    table.insert(cpOptions, "Checkpoint " .. i)
+    table.insert(cpOptions2, "Checkpoint " .. i)
 end
 
-AutoSummitSection:AddDropdown({
+AutoSummitV2:AddDropdown({
     Text = "Target Checkpoint",
-    Options = cpOptions,
+    Options = cpOptions2,
     Default = "Checkpoint 41",
     Callback = function(option)
-        selectedTargetCP = option
+        selectedTargetCP2 = option
         Notify("AUTO SUMMIT", "Target set to: " .. option, "info", 2)
     end
 })
 
-AutoSummitSection:AddToggle({
+AutoSummitV2:AddToggle({
     Text = "Auto Summit",
     Default = false,
     Callback = function(value)
         if value then
-            autoSummitEnabled = true
-            loopCount = 0
-            StartAutoSummit()
+            autoSummitEnabled2 = true
+            loopCount2 = 0
+            StartAutoSummit2()
             Notify("AUTO SUMMIT", "Auto Summit Mount Kicau Mania: Enabled", "success", 3)
         else
-            StopAutoSummit()
+            StopAutoSummit2()
             Notify("AUTO SUMMIT", "Auto Summit Mount Kicau Mania: Disabled", "info", 2)
         end
     end
 })
 
-AutoSummitSection:AddSlider({
+AutoSummitV2:AddSlider({
     Text = "⏱️ Delay between Checkpoint (seconds)",
     Min = 1,
     Max = 5,
     Default = 1,
     Callback = function(value)
-        cpDelay = value
+        cpDelay2 = value
         Notify("AUTO SUMMIT", "Checkpoint Delay set to: " .. string.format("%.1f", value) .. " seconds", "info", 1)
     end
 })
 
-AutoSummitSection:AddButton({
+AutoSummitV2:AddButton({
     Text = "📍 Teleport to Selected Checkpoint",
     Callback = function()
-        local targetNum = tonumber(selectedTargetCP:match("%d+")) or 1
-        TeleportToSpecificCP(targetNum)
+        local targetNum = tonumber(selectedTargetCP2:match("%d+")) or 1
+        TeleportToSpecificCP2(targetNum)
     end
 })
+
+--// UTILITY
 
 local UtilitySection = UtilityTab:AddSection("🛡️ Anti Staff")
 
@@ -2168,7 +2139,6 @@ local noBrightEnabled = false
 local originalFogEnd = nil
 local originalBrightness = nil
 
--- No Fog
 local function SetNoFog(value)
     if value then
         originalFogEnd = Lighting.FogEnd
@@ -2184,7 +2154,6 @@ local function SetNoFog(value)
     end
 end
 
--- No Bright (Dark)
 local function SetNoBright(value)
     if value then
         originalBrightness = Lighting.Brightness
@@ -2349,7 +2318,7 @@ local function CreatePerformanceCounter()
     performanceGui.Name = "NyxPerformanceCounter"
     performanceGui.ResetOnSpawn = false
     performanceGui.IgnoreGuiInset = true
-    local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+    performanceGui.Parent = PlayerGui
 
     local container = Instance.new("Frame")
     container.Name = "Container"
@@ -2462,7 +2431,6 @@ AntiLagSection:AddToggle({
     end
 })
 
--- Buat ulang counter setelah respawn
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
 
@@ -2477,10 +2445,7 @@ local BypassSection = UtilityTab:AddSection("💬 Bypass Chat & Voice Chat")
 
 local chatBypassEnabled = false
 local chatGui = nil
-local voiceBypassEnabled = false
-
--- Word replacements
-local bypassWords = {
+local voiceBypassEnabled = falselocal bypassWords = {
     ["anjing"] = "anj{{aieixzvzx:ing}}",
     ["babi"] = "ba{{aieixzvzx:bi}}",
     ["ngentot"] = "ngen{{aieixzvzx:tot}}",
@@ -2502,7 +2467,6 @@ local bypassWords = {
     ["setan"] = "se{{aieixzvzx:tan}}",
 }
 
--- Buat UI (posisi tengah layar)
 local function CreateChatGUI()
     if chatGui then return end
     
@@ -2530,7 +2494,6 @@ local function CreateChatGUI()
     stroke.Thickness = 1.2
     stroke.Transparency = 0.25
 
-    -- Title bar
     local titleBar = Instance.new("Frame")
     titleBar.Parent = frame
     titleBar.BackgroundColor3 = Color3.fromRGB(32, 32, 44)
@@ -2549,7 +2512,6 @@ local function CreateChatGUI()
     titleFix.Position = UDim2.new(0, 0, 1, -12)
     titleFix.Size = UDim2.new(1, 0, 0, 12)
 
-    -- Title text
     local titleText = Instance.new("TextLabel")
     titleText.Parent = titleBar
     titleText.BackgroundTransparency = 1
@@ -2561,7 +2523,6 @@ local function CreateChatGUI()
     titleText.Font = Enum.Font.GothamBold
     titleText.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Close button
     local closeBtn = Instance.new("TextButton")
     closeBtn.Parent = titleBar
     closeBtn.BackgroundColor3 = Color3.fromRGB(225, 70, 85)
@@ -2577,7 +2538,6 @@ local function CreateChatGUI()
     closeCorner.CornerRadius = UDim.new(0, 7)
     closeCorner.Parent = closeBtn
 
-    -- Content frame
     local contentFrame = Instance.new("Frame")
     contentFrame.Parent = frame
     contentFrame.BackgroundTransparency = 1
@@ -2585,7 +2545,6 @@ local function CreateChatGUI()
     contentFrame.Position = UDim2.new(0, 0, 0, 34)
     contentFrame.Size = UDim2.new(1, 0, 1, -34)
 
-    -- TextBox
     local textBox = Instance.new("TextBox")
     textBox.Parent = contentFrame
     textBox.BackgroundColor3 = Color3.fromRGB(34, 34, 46)
@@ -2616,7 +2575,6 @@ local function CreateChatGUI()
     textStroke.Thickness = 1
     textStroke.Transparency = 0.45
 
-    -- Send button
     local sendBtn = Instance.new("TextButton")
     sendBtn.Parent = contentFrame
     sendBtn.BackgroundColor3 = Color3.fromRGB(80, 140, 255)
@@ -2632,7 +2590,6 @@ local function CreateChatGUI()
     sendCorner.CornerRadius = UDim.new(0, 8)
     sendCorner.Parent = sendBtn
 
-    -- Status label
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Parent = contentFrame
     statusLabel.BackgroundTransparency = 1
@@ -2645,7 +2602,6 @@ local function CreateChatGUI()
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.TextTruncate = Enum.TextTruncate.AtEnd
     
-    -- Drag functionality
     local dragging = false
     local dragStart = nil
     local frameStart = nil
@@ -2673,7 +2629,6 @@ local function CreateChatGUI()
         end
     end)
     
-    -- Fungsi untuk mengirim pesan via chat
     local function SendMessage(message)
         if message == "" then 
             statusLabel.Text = "Cannot send empty message"
@@ -2762,7 +2717,6 @@ local function CreateChatGUI()
     return frame
 end
 
--- Chat Bypass Toggle
 local function StartChatBypass()
     if chatBypassEnabled then return end
     
@@ -2794,7 +2748,6 @@ BypassSection:AddToggle({
     end
 })
 
--- Voice Chat Bypass
 local function StartVoiceBypass()
     if voiceBypassEnabled then return end
     
@@ -2834,7 +2787,7 @@ BypassSection:AddToggle({
     end
 })
 
--- Auto update all features when character respawns (FIX: Hanya 1)
+-- Auto update all features when character respawns
 LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(0.6)
     if speedEnabled then
@@ -2872,4 +2825,4 @@ StartAntiAFK()
 
 print("🌸 Nyx Hub Loaded Successfully!")
 print("💤 Anti AFK Active!")
-print("🔥 Anti Cheat Bypass Active!") 
+print("🔥 Anti Cheat Bypass Active!")
