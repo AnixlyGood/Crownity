@@ -2445,7 +2445,9 @@ local BypassSection = UtilityTab:AddSection("💬 Bypass Chat & Voice Chat")
 
 local chatBypassEnabled = false
 local chatGui = nil
-local voiceBypassEnabled = falselocal bypassWords = {
+local voiceBypassEnabled = false
+
+local bypassWords = {
     ["anjing"] = "anj{{aieixzvzx:ing}}",
     ["babi"] = "ba{{aieixzvzx:bi}}",
     ["ngentot"] = "ngen{{aieixzvzx:tot}}",
