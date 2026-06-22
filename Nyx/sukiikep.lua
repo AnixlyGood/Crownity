@@ -456,6 +456,62 @@ MainSection:AddToggle({
     end
 })
 
+-- God Mode (TARUH SINI)
+local godModeEnabled = false
+local godModeConnection = nil
+
+local function StartGodMode()
+    if godModeConnection then return end
+    
+    godModeConnection = RunService.Heartbeat:Connect(function()
+        if godModeEnabled and LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.MaxHealth = math.huge
+                humanoid.Health = math.huge
+                humanoid.BreakJointsOnDeath = false
+            end
+            
+            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Anchored = false
+                end
+            end
+        end
+    end)
+end
+
+local function StopGodMode()
+    if godModeConnection then
+        godModeConnection:Disconnect()
+        godModeConnection = nil
+    end
+    
+    if LocalPlayer.Character then
+        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.MaxHealth = 100
+            humanoid.Health = 100
+            humanoid.BreakJointsOnDeath = true
+        end
+    end
+end
+
+MainSection:AddToggle({
+    Text = "God Mode",
+    Default = false,
+    Callback = function(value)
+        godModeEnabled = value
+        if value then
+            StartGodMode()
+            Notify("GOD MODE", "God Mode: Enabled - You are immortal!", "success", 3)
+        else
+            StopGodMode()
+            Notify("GOD MODE", "God Mode: Disabled", "info", 2)
+        end
+    end
+})
+
 -- Infinity Jump
 local infinityJumpEnabled = false
 local jumpConnection = nil
@@ -538,50 +594,6 @@ MainSection:AddSlider({
 
 -- INVISIBLE MODE
 local InvisibleSection = MainTab:AddSection("👻 Invisible Mode")
-
--- No Fall Damage
-local noFallDamageEnabled = false
-local noFallConnection = nil
-
-local function StartNoFallDamage()
-    if noFallConnection then return end
-    
-    noFallConnection = RunService.Heartbeat:Connect(function()
-        if noFallDamageEnabled and LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                if humanoid.FloorMaterial == Enum.Material.Air then
-                    local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if rootPart and rootPart.Velocity.Y < -30 then
-                        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, -20, rootPart.Velocity.Z)
-                    end
-                end
-            end
-        end
-    end)
-end
-
-local function StopNoFallDamage()
-    if noFallConnection then
-        noFallConnection:Disconnect()
-        noFallConnection = nil
-    end
-end
-
-InvisibleSection:AddToggle({
-    Text = "No Fall Damage",
-    Default = false,
-    Callback = function(value)
-        noFallDamageEnabled = value
-        if value then
-            StartNoFallDamage()
-            Notify("NO FALL", "No Fall Damage: Enabled", "success", 2)
-        else
-            StopNoFallDamage()
-            Notify("NO FALL", "No Fall Damage: Disabled", "info", 2)
-        end
-    end
-})
 
 local invisibleEnabled = false
 local invisibleConnection = nil
@@ -960,3 +972,1315 @@ LocalPlayer.CharacterAdded:Connect(function()
         StopFly(true)
     end
 end)
+
+----V1 AUTO SUMMIT (CP1-CP41)
+local AutoSummitV1 = MainTab:AddSection("🏔️ Auto Summit V1")
+
+local autoSummitEnabled = false
+local currentCp = 1
+local cpDelay = 1
+local loopCount = 0
+local selectedTargetCP = "CP41"
+local isTeleporting = false
+
+local function TeleportToCP(cpNumber)
+    if isTeleporting then return false end
+    isTeleporting = true
+    
+    local character = LocalPlayer.Character
+    if not character then 
+        isTeleporting = false
+        return false 
+    end
+    
+    task.wait(0.2)
+    
+    local checkpointParent = workspace:FindFirstChild("Checkpoints")
+    if not checkpointParent then
+        checkpointParent = workspace:FindFirstChild("MountKicauMania") or workspace:FindFirstChild("Mount")
+    end
+    
+    if not checkpointParent then
+        for _, child in ipairs(workspace:GetChildren()) do
+            if child.Name:lower():find("checkpoint") or child.Name:lower():find("cp") then
+                checkpointParent = child
+                break
+            end
+        end
+    end
+    
+    if not checkpointParent then
+        Notify("AUTO SUMMIT", "Checkpoints folder not found!", "error", 2)
+        isTeleporting = false
+        return false
+    end
+    
+    local cpName = "CP" .. cpNumber
+    local cp = checkpointParent:FindFirstChild(cpName)
+    
+    if not cp then
+        cpName = "Checkpoint" .. cpNumber
+        cp = checkpointParent:FindFirstChild(cpName)
+    end
+    
+    if not cp then
+        for _, child in ipairs(checkpointParent:GetChildren()) do
+            if child.Name:lower() == "cp" .. cpNumber or child.Name:lower() == "checkpoint" .. cpNumber then
+                cp = child
+                break
+            end
+        end
+    end
+    
+    if not cp then
+        Notify("AUTO SUMMIT", "CP" .. cpNumber .. " not found!", "error", 2)
+        isTeleporting = false
+        return false
+    end
+    
+    if cp:IsA("Model") then
+        character:PivotTo(cp:GetPivot() + Vector3.new(0, 3, 0))
+    elseif cp:IsA("BasePart") then
+        character:PivotTo(cp.CFrame + Vector3.new(0, 3, 0))
+    else
+        local part = cp:FindFirstChildWhichIsA("BasePart", true)
+        if part then
+            character:PivotTo(part.CFrame + Vector3.new(0, 3, 0))
+        else
+            Notify("AUTO SUMMIT", "Target is not a Model or BasePart", "error", 2)
+            isTeleporting = false
+            return false
+        end
+    end
+    
+    task.wait(0.2)
+    isTeleporting = false
+    return true
+end
+
+local function TeleportToSpecificCP(cpNumber)
+    if isTeleporting then 
+        Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
+        return false 
+    end
+    
+    local success = TeleportToCP(cpNumber)
+    if success then
+        Notify("AUTO SUMMIT", "Teleported to CP" .. cpNumber, "success", 2)
+    end
+    return success
+end
+
+local function StartAutoSummit()
+    if isTeleporting then 
+        Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
+        return
+    end
+    
+    currentCp = 1
+    loopCount = loopCount + 1
+    
+    local targetNum = 41
+    if selectedTargetCP and selectedTargetCP ~= "All CP" then
+        targetNum = tonumber(selectedTargetCP:match("%d+")) or 41
+    end
+    
+    Notify("AUTO SUMMIT", "Loop #" .. loopCount .. " - Starting from CP1 to " .. selectedTargetCP, "info", 2)
+    
+    task.spawn(function()
+        while autoSummitEnabled and currentCp <= targetNum do
+            if isTeleporting then
+                task.wait(0.5)
+            else
+                Notify("AUTO SUMMIT", "Teleporting to CP" .. currentCp, "info", 1)
+                TeleportToCP(currentCp)
+                currentCp = currentCp + 1
+                task.wait(cpDelay)
+            end
+        end
+        
+        if currentCp > targetNum and autoSummitEnabled then
+            Notify("AUTO SUMMIT", "Reached " .. selectedTargetCP .. "! (Loop #" .. loopCount .. ")", "success", 2)
+            Notify("AUTO SUMMIT", "Stopping...", "info", 2)
+            autoSummitEnabled = false
+        end
+    end)
+end
+
+local function StopAutoSummit()
+    autoSummitEnabled = false
+    currentCp = 1
+    loopCount = 0
+end
+
+local cpOptions = {}
+for i = 1, 41 do
+    table.insert(cpOptions, "CP" .. i)
+end
+
+AutoSummitV1:AddDropdown({
+    Text = "Target CP",
+    Options = cpOptions,
+    Default = "CP41",
+    Callback = function(option)
+        selectedTargetCP = option
+        Notify("AUTO SUMMIT", "Target CP set to: " .. option, "info", 2)
+    end
+})
+
+AutoSummitV1:AddToggle({
+    Text = "Auto Summit",
+    Default = false,
+    Callback = function(value)
+        if value then
+            autoSummitEnabled = true
+            loopCount = 0
+            StartAutoSummit()
+            Notify("AUTO SUMMIT", "Auto Summit Mount Kicau Mania: Enabled", "success", 3)
+        else
+            StopAutoSummit()
+            Notify("AUTO SUMMIT", "Auto Summit Mount Kicau Mania: Disabled", "info", 2)
+        end
+    end
+})
+
+AutoSummitV1:AddSlider({
+    Text = "⏱️ Delay between CP (seconds)",
+    Min = 1,
+    Max = 5,
+    Default = 1,
+    Callback = function(value)
+        cpDelay = value
+        Notify("AUTO SUMMIT", "CP Delay set to: " .. string.format("%.1f", value) .. " seconds", "info", 1)
+    end
+})
+
+AutoSummitV1:AddButton({
+    Text = "📍 Teleport to Selected CP",
+    Callback = function()
+        local targetNum = tonumber(selectedTargetCP:match("%d+")) or 1
+        TeleportToSpecificCP(targetNum)
+    end
+})
+
+---V2 AUTO SUMMIT (Checkpoint 1 - Checkpoint 41)
+local AutoSummitV2 = MainTab:AddSection("🏔️ Auto Summit V2")
+
+local autoSummitEnabled2 = false
+local currentCp2 = 1
+local cpDelay2 = 1
+local loopCount2 = 0
+local selectedTargetCP2 = "Checkpoint 41"
+local isTeleporting2 = false
+
+local function TeleportToCP2(cpNumber)
+    if isTeleporting2 then return false end
+    isTeleporting2 = true
+    
+    local character = LocalPlayer.Character
+    if not character then 
+        isTeleporting2 = false
+        return false 
+    end
+    
+    task.wait(0.2)
+    
+    local checkpointParent = workspace:FindFirstChild("Checkpoint")
+    if not checkpointParent then
+        checkpointParent = workspace:FindFirstChild("Checkpoints")
+    end
+    
+    if not checkpointParent then
+        for _, child in ipairs(workspace:GetChildren()) do
+            if child.Name:lower():find("checkpoint") then
+                checkpointParent = child
+                break
+            end
+        end
+    end
+    
+    if not checkpointParent then
+        Notify("AUTO SUMMIT", "Checkpoint folder not found!", "error", 2)
+        isTeleporting2 = false
+        return false
+    end
+    
+    local cpName = "Checkpoint " .. cpNumber
+    local cp = checkpointParent:FindFirstChild(cpName)
+    
+    if not cp then
+        cpName = "Checkpoint" .. cpNumber
+        cp = checkpointParent:FindFirstChild(cpName)
+    end
+    
+    if not cp then
+        cpName = "CP" .. cpNumber
+        cp = checkpointParent:FindFirstChild(cpName)
+    end
+    
+    if not cp then
+        for _, child in ipairs(checkpointParent:GetChildren()) do
+            local childName = child.Name:lower()
+            if childName == "checkpoint " .. cpNumber or 
+               childName == "checkpoint" .. cpNumber or 
+               childName == "cp" .. cpNumber then
+                cp = child
+                break
+            end
+        end
+    end
+    
+    if not cp then
+        Notify("AUTO SUMMIT", "Checkpoint " .. cpNumber .. " not found!", "error", 2)
+        isTeleporting2 = false
+        return false
+    end
+    
+    if cp:IsA("Model") then
+        character:PivotTo(cp:GetPivot() + Vector3.new(0, 3, 0))
+    elseif cp:IsA("BasePart") then
+        character:PivotTo(cp.CFrame + Vector3.new(0, 3, 0))
+    else
+        local part = cp:FindFirstChildWhichIsA("BasePart", true)
+        if part then
+            character:PivotTo(part.CFrame + Vector3.new(0, 3, 0))
+        else
+            Notify("AUTO SUMMIT", "Target is not a Model or BasePart", "error", 2)
+            isTeleporting2 = false
+            return false
+        end
+    end
+    
+    task.wait(0.2)
+    isTeleporting2 = false
+    return true
+end
+
+local function TeleportToSpecificCP2(cpNumber)
+    if isTeleporting2 then 
+        Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
+        return false 
+    end
+    
+    local success = TeleportToCP2(cpNumber)
+    if success then
+        Notify("AUTO SUMMIT", "Teleported to Checkpoint " .. cpNumber, "success", 2)
+    end
+    return success
+end
+
+local function StartAutoSummit2()
+    if isTeleporting2 then 
+        Notify("AUTO SUMMIT", "Please wait, still teleporting...", "warning", 2)
+        return
+    end
+    
+    currentCp2 = 1
+    loopCount2 = loopCount2 + 1
+    
+    local targetNum = 41
+    if selectedTargetCP2 and selectedTargetCP2 ~= "All Checkpoint" then
+        targetNum = tonumber(selectedTargetCP2:match("%d+")) or 41
+    end
+    
+    Notify("AUTO SUMMIT", "Loop #" .. loopCount2 .. " - Starting from Checkpoint 1 to " .. selectedTargetCP2, "info", 2)
+    
+    task.spawn(function()
+        while autoSummitEnabled2 and currentCp2 <= targetNum do
+            if isTeleporting2 then
+                task.wait(0.5)
+            else
+                Notify("AUTO SUMMIT", "Teleporting to Checkpoint " .. currentCp2, "info", 1)
+                TeleportToCP2(currentCp2)
+                currentCp2 = currentCp2 + 1
+                task.wait(cpDelay2)
+            end
+        end
+        
+        if currentCp2 > targetNum and autoSummitEnabled2 then
+            Notify("AUTO SUMMIT", "Reached " .. selectedTargetCP2 .. "! (Loop #" .. loopCount2 .. ")", "success", 2)
+            Notify("AUTO SUMMIT", "Stopping...", "info", 2)
+            autoSummitEnabled2 = false
+        end
+    end)
+end
+
+local function StopAutoSummit2()
+    autoSummitEnabled2 = false
+    currentCp2 = 1
+    loopCount2 = 0
+end
+
+local cpOptions2 = {}
+for i = 1, 41 do
+    table.insert(cpOptions2, "Checkpoint " .. i)
+end
+
+AutoSummitV2:AddDropdown({
+    Text = "Target Checkpoint",
+    Options = cpOptions2,
+    Default = "Checkpoint 41",
+    Callback = function(option)
+        selectedTargetCP2 = option
+        Notify("AUTO SUMMIT", "Target set to: " .. option, "info", 2)
+    end
+})
+
+AutoSummitV2:AddToggle({
+    Text = "Auto Summit",
+    Default = false,
+    Callback = function(value)
+        if value then
+            autoSummitEnabled2 = true
+            loopCount2 = 0
+            StartAutoSummit2()
+            Notify("AUTO SUMMIT", "Auto Summit Mount Kicau Mania: Enabled", "success", 3)
+        else
+            StopAutoSummit2()
+            Notify("AUTO SUMMIT", "Auto Summit Mount Kicau Mania: Disabled", "info", 2)
+        end
+    end
+})
+
+AutoSummitV2:AddSlider({
+    Text = "⏱️ Delay between Checkpoint (seconds)",
+    Min = 1,
+    Max = 5,
+    Default = 1,
+    Callback = function(value)
+        cpDelay2 = value
+        Notify("AUTO SUMMIT", "Checkpoint Delay set to: " .. string.format("%.1f", value) .. " seconds", "info", 1)
+    end
+})
+
+AutoSummitV2:AddButton({
+    Text = "📍 Teleport to Selected Checkpoint",
+    Callback = function()
+        local targetNum = tonumber(selectedTargetCP2:match("%d+")) or 1
+        TeleportToSpecificCP2(targetNum)
+    end
+})
+
+--// TELEPORT AND SPECTATE PLAYER
+
+local TeleportToPlayerSection = TeleportTab:AddSection("🎯 Teleport to Player")
+local SpectateSection = TeleportTab:AddSection("👁️ Spectate Player")
+
+local selectedTeleportPlayer = nil
+local selectedSpectatePlayer = nil
+
+local playerDropdown = nil
+local spectateDropdown = nil
+
+--// SPECTATE VARIABLES
+
+local viewing = nil
+local isSpectating = false
+local originalCameraSubject = nil
+
+local targetCharacterConnection = nil
+local targetRemovingConnection = nil
+local cameraChangedConnection = nil
+
+--// PLAYER LIST
+
+local function GetPlayerList()
+    local list = {}
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            table.insert(list, plr.Name)
+        end
+    end
+
+    table.sort(list)
+
+    -- Biar dropdown tidak kosong
+    if #list == 0 then
+        table.insert(list, "No Players")
+    end
+
+    return list
+end
+
+-- Mendukung beberapa versi dropdown Anixly UI
+local function UpdateDropdownOptions(dropdown, options)
+    if not dropdown then
+        return false
+    end
+
+    if typeof(dropdown.SetOptions) == "function" then
+        local success = pcall(function()
+            dropdown:SetOptions(options)
+        end)
+
+        if success then
+            return true
+        end
+    end
+
+    if typeof(dropdown.Refresh) == "function" then
+        local success = pcall(function()
+            dropdown:Refresh(options)
+        end)
+
+        if success then
+            return true
+        end
+    end
+
+    if typeof(dropdown.SetValues) == "function" then
+        local success = pcall(function()
+            dropdown:SetValues(options)
+        end)
+
+        if success then
+            return true
+        end
+    end
+
+    warn("Dropdown tidak mendukung SetOptions, Refresh, atau SetValues")
+    return false
+end
+
+local function RefreshPlayerDropdowns()
+    local list = GetPlayerList()
+
+    UpdateDropdownOptions(playerDropdown, list)
+    UpdateDropdownOptions(spectateDropdown, list)
+
+    -- Reset pilihan teleport jika player sudah keluar
+    if selectedTeleportPlayer
+        and selectedTeleportPlayer ~= "No Players"
+        and not Players:FindFirstChild(selectedTeleportPlayer) then
+
+        selectedTeleportPlayer = nil
+    end
+
+    -- Reset pilihan spectate jika player sudah keluar
+    if selectedSpectatePlayer
+        and selectedSpectatePlayer ~= "No Players"
+        and not Players:FindFirstChild(selectedSpectatePlayer) then
+
+        selectedSpectatePlayer = nil
+    end
+end
+
+--// TELEPORT DROPDOWN
+
+playerDropdown = TeleportToPlayerSection:AddDropdown({
+    Text = "Select Player",
+    Options = GetPlayerList(),
+    Default = nil,
+
+    Callback = function(option)
+        if option == "No Players" then
+            selectedTeleportPlayer = nil
+            return
+        end
+
+        selectedTeleportPlayer = option
+        print("Selected teleport player:", option)
+    end
+})
+
+--// TELEPORT BUTTON
+
+TeleportToPlayerSection:AddButton({
+    Text = "Teleport to Player",
+
+    Callback = function()
+        if not selectedTeleportPlayer
+            or selectedTeleportPlayer == ""
+            or selectedTeleportPlayer == "No Players" then
+
+            Notify(
+                "TELEPORT",
+                "Please select a player first.",
+                "warning",
+                2
+            )
+
+            return
+        end
+
+        local target = Players:FindFirstChild(selectedTeleportPlayer)
+
+        if not target then
+            selectedTeleportPlayer = nil
+            RefreshPlayerDropdowns()
+
+            Notify(
+                "TELEPORT",
+                "Player sudah keluar dari server.",
+                "error",
+                2
+            )
+
+            return
+        end
+
+        local myCharacter =
+            LocalPlayer.Character
+            or LocalPlayer.CharacterAdded:Wait()
+
+        local targetCharacter = target.Character
+
+        local myRoot =
+            myCharacter
+            and myCharacter:FindFirstChild("HumanoidRootPart")
+
+        local targetRoot =
+            targetCharacter
+            and targetCharacter:FindFirstChild("HumanoidRootPart")
+
+        if not myRoot or not targetRoot then
+            Notify(
+                "TELEPORT",
+                "Character target belum siap.",
+                "error",
+                2
+            )
+
+            return
+        end
+
+        myCharacter:PivotTo(
+            targetRoot.CFrame * CFrame.new(0, 3, 3)
+        )
+
+        Notify(
+            "TELEPORT",
+            "Teleported to " .. target.Name,
+            "success",
+            2
+        )
+    end
+})
+
+--// SPECTATE FUNCTIONS
+
+local function DisconnectSpectateConnections()
+    if targetCharacterConnection then
+        targetCharacterConnection:Disconnect()
+        targetCharacterConnection = nil
+    end
+
+    if targetRemovingConnection then
+        targetRemovingConnection:Disconnect()
+        targetRemovingConnection = nil
+    end
+
+    if cameraChangedConnection then
+        cameraChangedConnection:Disconnect()
+        cameraChangedConnection = nil
+    end
+end
+
+local function GetCharacterHumanoid(plr)
+    local character = plr and plr.Character
+
+    if not character then
+        return nil
+    end
+
+    return character:FindFirstChildWhichIsA("Humanoid")
+end
+
+local function RestoreLocalCamera()
+    local camera = workspace.CurrentCamera
+
+    if not camera then
+        return
+    end
+
+    local localHumanoid =
+        GetCharacterHumanoid(LocalPlayer)
+
+    if originalCameraSubject
+        and originalCameraSubject.Parent then
+
+        camera.CameraSubject = originalCameraSubject
+
+    elseif localHumanoid then
+        camera.CameraSubject = localHumanoid
+    end
+end
+
+local function StopSpectate(showNotification)
+    DisconnectSpectateConnections()
+
+    RestoreLocalCamera()
+
+    viewing = nil
+    isSpectating = false
+
+    if showNotification ~= false then
+        Notify(
+            "SPECTATE",
+            "Stopped spectating",
+            "info",
+            2
+        )
+    end
+end
+
+local function SetSpectateTarget(target)
+    if not isSpectating or viewing ~= target then
+        return false
+    end
+
+    local camera = workspace.CurrentCamera
+    local targetHumanoid = GetCharacterHumanoid(target)
+
+    if not camera or not targetHumanoid then
+        return false
+    end
+
+    camera.CameraSubject = targetHumanoid
+    return true
+end
+
+local function StartSpectate(playerName)
+    local target = Players:FindFirstChild(playerName)
+
+    if not target or target == LocalPlayer then
+        Notify(
+            "SPECTATE",
+            "Player not found!",
+            "error",
+            2
+        )
+
+        return false
+    end
+
+    local targetHumanoid = GetCharacterHumanoid(target)
+
+    if not targetHumanoid then
+        Notify(
+            "SPECTATE",
+            "Character target belum siap!",
+            "error",
+            2
+        )
+
+        return false
+    end
+
+    if isSpectating then
+        StopSpectate(false)
+    end
+
+    local camera = workspace.CurrentCamera
+
+    if not camera then
+        Notify(
+            "SPECTATE",
+            "Camera tidak ditemukan!",
+            "error",
+            2
+        )
+
+        return false
+    end
+
+    originalCameraSubject = camera.CameraSubject
+    viewing = target
+    isSpectating = true
+
+    camera.CameraSubject = targetHumanoid
+
+    -- Saat target respawn, kamera otomatis pindah ke karakter barunya
+    targetCharacterConnection = target.CharacterAdded:Connect(function(character)
+        local humanoid =
+            character:WaitForChild("Humanoid", 10)
+
+        if humanoid
+            and isSpectating
+            and viewing == target then
+
+            task.wait(0.2)
+
+            local currentCamera = workspace.CurrentCamera
+
+            if currentCamera then
+                currentCamera.CameraSubject = humanoid
+            end
+        end
+    end)
+
+    -- Pastikan kamera tetap mengikuti target
+    cameraChangedConnection =
+        camera:GetPropertyChangedSignal("CameraSubject"):Connect(function()
+
+            if not isSpectating or viewing ~= target then
+                return
+            end
+
+            local humanoid = GetCharacterHumanoid(target)
+
+            if humanoid
+                and camera.CameraSubject ~= humanoid then
+
+                camera.CameraSubject = humanoid
+            end
+        end)
+
+    Notify(
+        "SPECTATE",
+        "Now viewing " .. target.Name,
+        "success",
+        2
+    )
+
+    return true
+end
+
+--// SPECTATE DROPDOWN
+
+spectateDropdown = SpectateSection:AddDropdown({
+    Text = "Select Player to Spectate",
+    Options = GetPlayerList(),
+    Default = nil,
+
+    Callback = function(option)
+        if option == "No Players" then
+            selectedSpectatePlayer = nil
+            return
+        end
+
+        selectedSpectatePlayer = option
+        print("Selected spectate player:", option)
+    end
+})
+
+--// SPECTATE BUTTONS
+
+SpectateSection:AddButton({
+    Text = "Start Spectate",
+
+    Callback = function()
+        if not selectedSpectatePlayer
+            or selectedSpectatePlayer == ""
+            or selectedSpectatePlayer == "No Players" then
+
+            Notify(
+                "SPECTATE",
+                "Please select a player first.",
+                "warning",
+                2
+            )
+
+            return
+        end
+
+        StartSpectate(selectedSpectatePlayer)
+    end
+})
+
+SpectateSection:AddButton({
+    Text = "Stop Spectate",
+
+    Callback = function()
+        StopSpectate(true)
+    end
+})
+
+--// AUTO REFRESH PLAYER LIST
+
+Players.PlayerAdded:Connect(function(plr)
+    task.wait(0.3)
+    RefreshPlayerDropdowns()
+
+    Notify(
+        "PLAYER LIST",
+        plr.Name .. " joined the server.",
+        "info",
+        2
+    )
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if selectedTeleportPlayer == plr.Name then
+        selectedTeleportPlayer = nil
+    end
+
+    if selectedSpectatePlayer == plr.Name then
+        selectedSpectatePlayer = nil
+    end
+
+    if viewing == plr then
+        StopSpectate(false)
+
+        Notify(
+            "SPECTATE",
+            "Target left the server.",
+            "warning",
+            2
+        )
+    end
+
+    task.defer(function()
+        RefreshPlayerDropdowns()
+    end)
+end)
+
+-- Kalau karakter sendiri respawn, hentikan spectate
+LocalPlayer.CharacterAdded:Connect(function()
+    if isSpectating then
+        StopSpectate(false)
+    end
+end)
+
+-- Refresh pertama kali setelah UI selesai dibuat
+task.defer(function()
+    RefreshPlayerDropdowns()
+end)
+
+--// UTILITY
+
+local UtilitySection = UtilityTab:AddSection("🛡️ Anti Staff")
+
+local staffKeywords = {
+    "admin", "mod", "moderator", "owner", "creator", "dev", "developer",
+    "staff", "manager", "super", "helper", "head", "coordinator"
+}
+
+local antiStaffEnabled = false
+local antiStaffConnection = nil
+
+local function CheckForStaff()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            local nameLower = plr.Name:lower()
+            local displayLower = plr.DisplayName:lower()
+            for _, keyword in ipairs(staffKeywords) do
+                if nameLower:find(keyword) or displayLower:find(keyword) then
+                    return true, plr.Name, keyword
+                end
+            end
+        end
+    end
+    return false, nil, nil
+end
+
+local function StartAntiStaff()
+    if antiStaffConnection then return end
+    antiStaffConnection = RunService.Heartbeat:Connect(function()
+        if antiStaffEnabled then
+            local found, name, keyword = CheckForStaff()
+            if found then
+                Notify("⚠️ STAFF DETECTED", name .. " [" .. keyword .. "] - Hopping server...", "error", 5)
+                task.wait(1)
+                local servers = {}
+                local success, result = pcall(function()
+                    return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
+                end)
+                if success and result and result.data then
+                    for _, v in pairs(result.data) do
+                        if v.playing and v.id ~= game.JobId then
+                            table.insert(servers, v.id)
+                        end
+                    end
+                    if #servers > 0 then
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], LocalPlayer)
+                    else
+                        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+                    end
+                else
+                    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+                end
+            end
+        end
+    end)
+end
+
+local function StopAntiStaff()
+    if antiStaffConnection then
+        antiStaffConnection:Disconnect()
+        antiStaffConnection = nil
+    end
+end
+
+UtilitySection:AddToggle({
+    Text = "Anti Staff",
+    Default = false,
+    Callback = function(value)
+        antiStaffEnabled = value
+        if value then
+            StartAntiStaff()
+            Notify("ANTI STAFF", "Anti Staff: Enabled", "success", 3)
+        else
+            StopAntiStaff()
+            Notify("ANTI STAFF", "Anti Staff: Disabled", "info", 2)
+        end
+    end
+})
+
+-- Hide Name Tag
+local HideNameSection = MainTab:AddSection("👀 Hide Name Tag")
+
+local hideNameEnabled = false
+local hideNameLoop = nil
+local hideNameConnections = {}
+
+local function HidePlayerName(plr)
+    if not hideNameEnabled then return end
+    if not plr then return end
+    
+    local character = plr.Character
+    if character then
+        local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+        if humanoid then
+            pcall(function()
+                humanoid.NameDisplayDistance = 0
+            end)
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("BillboardGui") then
+                pcall(function()
+                    child.Enabled = false
+                end)
+            end
+        end
+    end
+end
+
+local function StartHideName()
+    if hideNameLoop then return end
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        HidePlayerName(plr)
+    end
+    
+    hideNameLoop = RunService.Heartbeat:Connect(function()
+        if hideNameEnabled then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                HidePlayerName(plr)
+            end
+        end
+    end)
+    
+    local playerAddedConn = Players.PlayerAdded:Connect(function(plr)
+        task.wait(0.5)
+        HidePlayerName(plr)
+    end)
+    table.insert(hideNameConnections, playerAddedConn)
+    
+    local charAddedConn = LocalPlayer.CharacterAdded:Connect(function(char)
+        task.wait(0.5)
+        HidePlayerName(LocalPlayer)
+    end)
+    table.insert(hideNameConnections, charAddedConn)
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        local charAddedConn2 = plr.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            HidePlayerName(plr)
+        end)
+        table.insert(hideNameConnections, charAddedConn2)
+    end
+end
+
+local function StopHideName()
+    if hideNameLoop then
+        hideNameLoop:Disconnect()
+        hideNameLoop = nil
+    end
+    
+    for _, conn in ipairs(hideNameConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    hideNameConnections = {}
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character then
+            local humanoid = plr.Character:FindFirstChildWhichIsA("Humanoid")
+            if humanoid then
+                pcall(function()
+                    humanoid.NameDisplayDistance = 100
+                end)
+            end
+            for _, child in ipairs(plr.Character:GetDescendants()) do
+                if child:IsA("BillboardGui") then
+                    pcall(function()
+                        child.Enabled = true
+                    end)
+                end
+            end
+        end
+    end
+end
+
+HideNameSection:AddToggle({
+    Text = "Hide Name",
+    Default = false,
+    Callback = function(value)
+        hideNameEnabled = value
+        if value then
+            StartHideName()
+            Notify("HIDE NAME", "Name tags hidden for all players!", "success", 3)
+        else
+            StopHideName()
+            Notify("HIDE NAME", "Name tags restored", "info", 2)
+        end
+    end
+})
+
+-- Anti Lag / Boost FPS
+local AntiLagSection = UtilityTab:AddSection("⚡ Boost FPS & Visual")
+
+local antiLagEnabled = false
+local antiLagConnection = nil
+local noFogEnabled = false
+local noBrightEnabled = false
+local originalFogEnd = nil
+local originalBrightness = nil
+
+local function SetNoFog(value)
+    if value then
+        originalFogEnd = Lighting.FogEnd
+        Lighting.FogEnd = 0
+        Lighting.FogStart = 0
+    else
+        if originalFogEnd then
+            Lighting.FogEnd = originalFogEnd
+        else
+            Lighting.FogEnd = 100000
+        end
+        Lighting.FogStart = 0
+    end
+end
+
+local function SetNoBright(value)
+    if value then
+        originalBrightness = Lighting.Brightness
+        Lighting.Brightness = 0
+        Lighting.ClockTime = 0
+    else
+        if originalBrightness then
+            Lighting.Brightness = originalBrightness
+        else
+            Lighting.Brightness = 1
+        end
+        Lighting.ClockTime = 14
+    end
+end
+
+local function ApplyAntiLag()
+    local terrain = workspace:FindFirstChildOfClass("Terrain")
+    if terrain then
+        terrain.WaterWaveSize = 0
+        terrain.WaterWaveSpeed = 0
+        terrain.WaterReflectance = 0
+        terrain.WaterTransparency = 0
+    end
+    
+    Lighting.GlobalShadows = false
+    
+    settings().Rendering.QualityLevel = 1
+    
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("Part") or v:IsA("UnionOperation") or v:IsA("MeshPart") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
+            pcall(function()
+                v.Material = "Plastic"
+                v.Reflectance = 0
+            end)
+        elseif v:IsA("Decal") then
+            pcall(function()
+                v.Transparency = 1
+            end)
+        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+            pcall(function()
+                v.Lifetime = NumberRange.new(0)
+            end)
+        elseif v:IsA("Explosion") then
+            pcall(function()
+                v.BlastPressure = 1
+                v.BlastRadius = 1
+            end)
+        end
+    end
+    
+    for _, v in pairs(Lighting:GetDescendants()) do
+        if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
+            pcall(function()
+                v.Enabled = false
+            end)
+        end
+    end
+    
+    if noFogEnabled then
+        SetNoFog(true)
+    end
+    if noBrightEnabled then
+        SetNoBright(true)
+    end
+end
+
+local function StartAntiLag()
+    if antiLagConnection then return end
+    
+    ApplyAntiLag()
+    
+    antiLagConnection = workspace.DescendantAdded:Connect(function(child)
+        task.spawn(function()
+            if antiLagEnabled then
+                if child:IsA("ForceField") or child:IsA("Sparkles") or child:IsA("Smoke") or child:IsA("Fire") then
+                    RunService.Heartbeat:Wait()
+                    pcall(function() child:Destroy() end)
+                elseif child:IsA("Part") or child:IsA("UnionOperation") or child:IsA("MeshPart") then
+                    pcall(function()
+                        child.Material = "Plastic"
+                        child.Reflectance = 0
+                    end)
+                elseif child:IsA("Decal") then
+                    pcall(function()
+                        child.Transparency = 1
+                    end)
+                elseif child:IsA("ParticleEmitter") or child:IsA("Trail") then
+                    pcall(function()
+                        child.Lifetime = NumberRange.new(0)
+                    end)
+                end
+            end
+        end)
+    end)
+end
+
+local function StopAntiLag()
+    if antiLagConnection then
+        antiLagConnection:Disconnect()
+        antiLagConnection = nil
+    end
+end
+
+AntiLagSection:AddToggle({
+    Text = "Boost FPS",
+    Default = false,
+    Callback = function(value)
+        antiLagEnabled = value
+        if value then
+            StartAntiLag()
+            Notify("BOOST FPS", "Boost FPS enabled - Graphics reduced", "success", 3)
+        else
+            StopAntiLag()
+            Notify("BOOST FPS", "Boost FPS disabled", "info", 2)
+        end
+    end
+})
+
+AntiLagSection:AddToggle({
+    Text = "No Fog",
+    Default = false,
+    Callback = function(value)
+        noFogEnabled = value
+        SetNoFog(value)
+        if value then
+            Notify("NO FOG", "Fog removed! Better visibility", "success", 2)
+        else
+            Notify("NO FOG", "Fog restored", "info", 2)
+        end
+    end
+})
+
+AntiLagSection:AddToggle({
+    Text = "No Bright",
+    Default = false,
+    Callback = function(value)
+        noBrightEnabled = value
+        SetNoBright(value)
+        if value then
+            Notify("NO BRIGHT", "Dark mode enabled", "success", 2)
+        else
+            Notify("NO BRIGHT", "Brightness restored", "info", 2)
+        end
+    end
+})
+
+local BypassSection = UtilityTab:AddSection("💬 Bypass Voice Chat")
+
+local chatGui = nil
+local voiceBypassEnabled = false
+
+-- Voice Chat Bypass
+local function StartVoiceBypass()
+    if voiceBypassEnabled then return end
+    
+    pcall(function()
+        local mt = getrawmetatable(game)
+        if mt then
+            local namecall = mt.__namecall
+            setreadonly(mt, false)
+            mt.__namecall = newcclosure(function(self, ...)
+                if getnamecallmethod() == "IsVoiceEnabledForUserIdAsync" then
+                    return true
+                end
+                return namecall(self, ...)
+            end)
+            setreadonly(mt, true)
+        end
+    end)
+    
+    voiceBypassEnabled = true
+    Notify("VOICE BYPASS", "Voice chat forced enabled!", "success", 3)
+end
+
+local function StopVoiceBypass()
+    voiceBypassEnabled = false
+    Notify("VOICE BYPASS", "Voice bypass disabled", "info", 2)
+end
+
+BypassSection:AddToggle({
+    Text = "Voice Chat Bypasser [Beta]",
+    Default = false,
+    Callback = function(value)
+        if value then
+            StartVoiceBypass()
+        else
+            StopVoiceBypass()
+        end
+    end
+})
+
+-- Auto update all features when character respawns
+LocalPlayer.CharacterAdded:Connect(function(character)
+    task.wait(0.6)
+    if speedEnabled then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.WalkSpeed = walkspeedValue end
+    end
+    if noclipEnabled then EnableNoclip() end
+    if infinityJumpEnabled then EnableInfinityJump() end
+end)
+
+--// ANTI AFK AUTO ENABLE
+local lastInput = tick()
+local antiAFKConnection = nil
+
+UIS.InputBegan:Connect(function() lastInput = tick() end)
+UIS.InputChanged:Connect(function() lastInput = tick() end)
+
+local function SimulateInput()
+    UIS.InputBegan:Fire(Enum.KeyCode.W, Enum.UserInputState.Begin)
+    task.wait(0.1)
+    UIS.InputEnded:Fire(Enum.KeyCode.W, Enum.UserInputState.End)
+end
+
+local function StartAntiAFK()
+    if antiAFKConnection then return end
+    antiAFKConnection = RunService.Heartbeat:Connect(function()
+        if tick() - lastInput > 50 then
+            SimulateInput()
+            lastInput = tick()
+        end
+    end)
+end
+
+StartAntiAFK()
+
+print("🌸 Nyx Hub Loaded Successfully!")
+print("💤 Anti AFK Active!")
+print("🔥 Anti Cheat Bypass Active!")
