@@ -321,7 +321,7 @@ task.spawn(function()
 end)
 
 --// ANIXLY HUB
-local AnixlyUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main_example.lua'))()
+local AnixlyUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/AnixlyGood/anixly-ui/refs/heads/main/AnixlyUi.lua"))()
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
